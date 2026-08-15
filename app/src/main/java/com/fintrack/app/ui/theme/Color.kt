@@ -65,3 +65,7 @@ val OutlineDark = Color(0xFF90909D)
 val IncomeGreen = Color(0xFF2E7D32)
 val ExpenseRed = Color(0xFFC62828)
 val PendingAmber = Color(0xFFF57C00)
+
+val SemanticGreen = IncomeGreen
+val SemanticRed = ExpenseRed
+

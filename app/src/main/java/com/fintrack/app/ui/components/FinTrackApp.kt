@@ -1,19 +1,10 @@
 package com.fintrack.app.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,130 +12,117 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavDestination.Companion.hasRoute
+import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import com.fintrack.app.ui.navigation.BottomNavItem
+import com.fintrack.app.ui.navigation.FinTrackNavHost
+import com.fintrack.app.ui.navigation.Screen
+import com.fintrack.app.ui.navigation.bottomNavItems
 import com.fintrack.app.ui.theme.FinTrackTheme
 
 /**
- * Stateful entry composable for FinTrack Application.
+ * Stateful root entry composable for FinTrack Application.
  */
 @Composable
-fun FinTrackApp() {
-    var selectedTab by remember { mutableIntStateOf(0) }
+fun FinTrackApp(
+    navController: NavHostController = rememberNavController()
+) {
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentDestination = navBackStackEntry?.destination
+
+    // Check if current screen is one of the 4 main bottom tab destinations
+    val isBottomBarVisible = bottomNavItems.any { item ->
+        currentDestination?.hierarchy?.any { it.hasRoute(item.route::class) } == true
+    }
 
     FinTrackAppContent(
-        selectedTab = selectedTab,
-        onTabSelected = { selectedTab = it },
-        onAddTransactionClick = { /* Will connect to AddTransaction route in M1 */ }
-    )
+        isBottomBarVisible = isBottomBarVisible,
+        bottomNavItems = bottomNavItems,
+        isTabSelected = { item ->
+            currentDestination?.hierarchy?.any { it.hasRoute(item.route::class) } == true
+        },
+        onTabSelected = { item ->
+            navController.navigate(item.route) {
+                // Pop up to the start destination of the graph to avoid building up a large stack of destinations
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                // Avoid multiple copies of the same destination when reselecting the same item
+                launchSingleTop = true
+                // Restore state when reselecting a previously selected item
+                restoreState = true
+            }
+        },
+        onAddTransactionClick = {
+            navController.navigate(Screen.AddEditTransaction())
+        }
+    ) { innerPadding ->
+        FinTrackNavHost(
+            navController = navController,
+            modifier = Modifier.padding(innerPadding)
+        )
+    }
 }
 
 /**
  * Stateless root UI container for FinTrack Application.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun FinTrackAppContent(
-    selectedTab: Int,
-    onTabSelected: (Int) -> Unit,
+    isBottomBarVisible: Boolean,
+    bottomNavItems: List<BottomNavItem>,
+    isTabSelected: (BottomNavItem) -> Boolean,
+    onTabSelected: (BottomNavItem) -> Unit,
     onAddTransactionClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    content: @Composable (androidx.compose.foundation.layout.PaddingValues) -> Unit
 ) {
-    val navItems = listOf("Trang chủ", "Giao dịch", "Thống kê", "Cài đặt")
-    val navIcons = listOf(
-        Icons.Default.Home,
-        Icons.AutoMirrored.Filled.List,
-        Icons.Default.PieChart,
-        Icons.Default.Settings
-    )
-
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = "FinTrack",
-                        style = MaterialTheme.typography.titleLarge
-                    )
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimary
-                )
-            )
-        },
         bottomBar = {
-            NavigationBar(
-                containerColor = MaterialTheme.colorScheme.surface
-            ) {
-                navItems.forEachIndexed { index, label ->
-                    NavigationBarItem(
-                        icon = { Icon(navIcons[index], contentDescription = label) },
-                        label = { Text(label) },
-                        selected = selectedTab == index,
-                        onClick = { onTabSelected(index) }
-                    )
+            if (isBottomBarVisible) {
+                NavigationBar(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ) {
+                    bottomNavItems.forEach { item ->
+                        val selected = isTabSelected(item)
+                        NavigationBarItem(
+                            icon = {
+                                Icon(
+                                    imageVector = item.icon,
+                                    contentDescription = item.contentDescription
+                                )
+                            },
+                            label = { Text(item.label) },
+                            selected = selected,
+                            onClick = { onTabSelected(item) }
+                        )
+                    }
                 }
             }
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = onAddTransactionClick,
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Thêm giao dịch")
+            if (isBottomBarVisible) {
+                FloatingActionButton(
+                    onClick = onAddTransactionClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Thêm giao dịch mới")
+                }
             }
         }
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Tổng số dư khả dụng",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = "24.500.000 ₫",
-                        style = MaterialTheme.typography.displayLarge,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
-
-            Text(
-                text = "Đang ở màn hình: ${navItems[selectedTab]}",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onBackground
-            )
-        }
+        content(innerPadding)
     }
 }
 
@@ -154,12 +132,26 @@ fun FinTrackAppContent(
 
 @PreviewLightDark
 @Composable
-private fun FinTrackAppPreview() {
+private fun FinTrackAppContentPreview() {
     FinTrackTheme {
         FinTrackAppContent(
-            selectedTab = 0,
+            isBottomBarVisible = true,
+            bottomNavItems = bottomNavItems,
+            isTabSelected = { it.route == Screen.Home },
             onTabSelected = {},
             onAddTransactionClick = {}
-        )
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+            ) {
+                Text(
+                    text = "Nội dung màn hình chính",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(24.dp)
+                )
+            }
+        }
     }
 }
