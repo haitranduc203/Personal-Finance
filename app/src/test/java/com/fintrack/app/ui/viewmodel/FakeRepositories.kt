@@ -184,3 +184,40 @@ class FakeTransactionRepository : TransactionRepository {
         _transactions.value = _transactions.value.filterNot { it.id == id }
     }
 }
+
+class FakePreferencesRepository(
+    initialPreferences: com.fintrack.app.data.local.preferences.UserPreferences = com.fintrack.app.data.local.preferences.UserPreferences()
+) : com.fintrack.app.data.repository.PreferencesRepository {
+
+    private val _prefs = MutableStateFlow(initialPreferences)
+    override val userPreferencesFlow: Flow<com.fintrack.app.data.local.preferences.UserPreferences> = _prefs.asStateFlow()
+
+    override suspend fun setTheme(theme: com.fintrack.app.data.local.preferences.AppThemeConfig) {
+        _prefs.value = _prefs.value.copy(theme = theme)
+    }
+
+    override suspend fun setCurrency(currency: com.fintrack.app.data.local.preferences.CurrencyConfig) {
+        _prefs.value = _prefs.value.copy(currency = currency)
+    }
+
+    override suspend fun setDailyReminderEnabled(enabled: Boolean) {
+        _prefs.value = _prefs.value.copy(isDailyReminderEnabled = enabled)
+    }
+
+    override suspend fun setReminderTime(hour: Int, minute: Int) {
+        _prefs.value = _prefs.value.copy(reminderHour = hour, reminderMinute = minute)
+    }
+
+    override suspend fun setOnboardingCompleted(completed: Boolean) {
+        _prefs.value = _prefs.value.copy(isOnboardingCompleted = completed)
+    }
+
+    override suspend fun resetOnboarding() {
+        _prefs.value = _prefs.value.copy(isOnboardingCompleted = false)
+    }
+
+    override suspend fun clearPreferences() {
+        _prefs.value = com.fintrack.app.data.local.preferences.UserPreferences()
+    }
+}
+

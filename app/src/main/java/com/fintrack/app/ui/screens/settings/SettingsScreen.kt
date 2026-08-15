@@ -1,5 +1,6 @@
 package com.fintrack.app.ui.screens.settings
 
+import android.app.TimePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -13,8 +14,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -36,88 +39,131 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.data.local.preferences.CurrencyConfig
 import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticRed
+import com.fintrack.app.ui.viewmodel.AppViewModelProvider
 
 /**
  * Stateful entry composable for Settings Screen.
  */
 @Composable
 fun SettingsScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    var isDarkTheme by remember { mutableStateOf(false) }
-    var selectedCurrency by remember { mutableStateOf("VND (₫)") }
-    var isDailyReminderEnabled by remember { mutableStateOf(true) }
-    var reminderTime by remember { mutableStateOf("20:00") }
-    var showResetDialog by remember { mutableStateOf(false) }
-    var showClearDataDialog by remember { mutableStateOf(false) }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    SettingsScreenContent(
-        isDarkTheme = isDarkTheme,
-        onToggleTheme = { isDarkTheme = it },
-        selectedCurrency = selectedCurrency,
-        onCurrencyClick = { /* Currency dialog in later milestone */ },
-        isDailyReminderEnabled = isDailyReminderEnabled,
-        onToggleDailyReminder = { isDailyReminderEnabled = it },
-        reminderTime = reminderTime,
-        onReminderTimeClick = { /* Time picker in later milestone */ },
-        onCategoryManagementClick = { /* Navigate to category management */ },
-        onResetOnboardingClick = { showResetDialog = true },
-        onClearDataClick = { showClearDataDialog = true },
-        modifier = modifier
-    )
+    LaunchedEffect(uiState.message) {
+        uiState.message?.let { msg ->
+            snackbarHostState.showSnackbar(msg)
+            viewModel.clearMessage()
+        }
+    }
 
-    if (showResetDialog) {
+    Box(modifier = modifier.fillMaxSize()) {
+        SettingsScreenContent(
+            isDarkTheme = uiState.isDarkTheme,
+            onToggleTheme = { viewModel.toggleDarkTheme(it) },
+            selectedCurrency = uiState.currencyDisplayName,
+            onCurrencyClick = { viewModel.openCurrencyDialog() },
+            isDailyReminderEnabled = uiState.isDailyReminderEnabled,
+            onToggleDailyReminder = { viewModel.toggleDailyReminder(it) },
+            reminderTime = uiState.reminderTimeFormatted,
+            onReminderTimeClick = {
+                val currentHour = uiState.userPreferences.reminderHour
+                val currentMinute = uiState.userPreferences.reminderMinute
+                TimePickerDialog(
+                    context,
+                    { _, hourOfDay, minute ->
+                        viewModel.setReminderTime(hourOfDay, minute)
+                    },
+                    currentHour,
+                    currentMinute,
+                    true
+                ).show()
+            },
+            onCategoryManagementClick = { /* Navigate to category management */ },
+            onResetOnboardingClick = { viewModel.openResetOnboardingDialog() },
+            onClearDataClick = { viewModel.openClearDataDialog() }
+        )
+
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 90.dp)
+        )
+    }
+
+    // Currency Selection Dialog
+    if (uiState.showCurrencyDialog) {
+        CurrencySelectionDialog(
+            selectedCurrency = uiState.userPreferences.currency,
+            onCurrencySelected = { viewModel.selectCurrency(it) },
+            onDismiss = { viewModel.dismissCurrencyDialog() }
+        )
+    }
+
+    // Reset Onboarding Dialog
+    if (uiState.showResetOnboardingDialog) {
         AlertDialog(
-            onDismissRequest = { showResetDialog = false },
+            onDismissRequest = { viewModel.dismissResetOnboardingDialog() },
             title = { Text("Đặt lại Onboarding?") },
-            text = { Text("Màn hình hướng dẫn sẽ xuất hiện lại trong lần mở ứng dụng kế tiếp.") },
+            text = { Text("Màn hình hướng dẫn giới thiệu sẽ xuất hiện lại khi mở ứng dụng.") },
             confirmButton = {
-                TextButton(onClick = { showResetDialog = false }) {
+                TextButton(onClick = { viewModel.confirmResetOnboarding() }) {
                     Text("Đồng ý")
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showResetDialog = false }) {
+                TextButton(onClick = { viewModel.dismissResetOnboardingDialog() }) {
                     Text("Hủy")
                 }
             }
         )
     }
 
-    if (showClearDataDialog) {
+    // Clear All Data Dialog
+    if (uiState.showClearDataDialog) {
         AlertDialog(
-            onDismissRequest = { showClearDataDialog = false },
+            onDismissRequest = { viewModel.dismissClearDataDialog() },
             title = { Text("Xóa toàn bộ dữ liệu?", color = MaterialTheme.colorScheme.error) },
-            text = { Text("Toàn bộ giao dịch và cài đặt sẽ bị xóa vĩnh viễn khỏi thiết bị. Hành động này không thể hoàn tác.") },
+            text = { Text("Toàn bộ lịch sử giao dịch và cài đặt sẽ được đặt lại về mặc định. Hành động này không thể hoàn tác.") },
             confirmButton = {
-                TextButton(onClick = { showClearDataDialog = false }) {
-                    Text("Xóa dữ liệu", color = SemanticRed)
+                TextButton(onClick = { viewModel.confirmClearData() }) {
+                    Text("Xóa dữ liệu", color = SemanticRed, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showClearDataDialog = false }) {
+                TextButton(onClick = { viewModel.dismissClearDataDialog() }) {
                     Text("Hủy")
                 }
             }
@@ -126,9 +172,60 @@ fun SettingsScreen(
 }
 
 /**
+ * Currency Selection Dialog composable.
+ */
+@Composable
+fun CurrencySelectionDialog(
+    selectedCurrency: CurrencyConfig,
+    onCurrencySelected: (CurrencyConfig) -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Chọn đơn vị tiền tệ", fontWeight = FontWeight.Bold) },
+        text = {
+            Column(modifier = Modifier.selectableGroup()) {
+                CurrencyConfig.values().forEach { currency ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = (currency == selectedCurrency),
+                                onClick = { onCurrencySelected(currency) },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = (currency == selectedCurrency),
+                            onClick = null,
+                            colors = RadioButtonDefaults.colors(
+                                selectedColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = currency.displayName,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = if (currency == selectedCurrency) FontWeight.Bold else FontWeight.Normal,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng")
+            }
+        }
+    )
+}
+
+/**
  * Stateless pure UI component for Settings Screen.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreenContent(
     isDarkTheme: Boolean,
@@ -149,7 +246,7 @@ fun SettingsScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Compact Header — Matches Home Screen Design
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -298,7 +395,7 @@ fun SettingsScreenContent(
                     SettingsNavigationItem(
                         icon = Icons.Default.Info,
                         title = "Phiên bản",
-                        value = "v1.0.0 (Build 1)",
+                        value = "v1.0.0 (Build 2026)",
                         onClick = {}
                     )
                 }
@@ -499,6 +596,18 @@ fun SettingsSwitchItem(
 @Composable
 private fun SettingsScreenPreview() {
     FinTrackTheme {
-        SettingsScreen()
+        SettingsScreenContent(
+            isDarkTheme = false,
+            onToggleTheme = {},
+            selectedCurrency = "VND (₫)",
+            onCurrencyClick = {},
+            isDailyReminderEnabled = true,
+            onToggleDailyReminder = {},
+            reminderTime = "20:00",
+            onReminderTimeClick = {},
+            onCategoryManagementClick = {},
+            onResetOnboardingClick = {},
+            onClearDataClick = {}
+        )
     }
 }

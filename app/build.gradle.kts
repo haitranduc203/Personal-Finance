@@ -82,6 +82,9 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
 
+    // DataStore Preferences
+    implementation(libs.androidx.datastore.preferences)
+
     // Tooling & Debugging
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
