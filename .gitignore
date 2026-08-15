@@ -1,0 +1,30 @@
+# Gradle and build output
+.gradle/
+build/
+**/build/
+/build
+app/build/
+
+# Local & IDE files
+*.iml
+.idea/
+/.idea/
+/local.properties
+local.properties
+.DS_Store
+/captures
+.externalNativeBuild
+.cxx
+
+# Temporary
+app_temp/
+
+# CodeGraph SQLite DB
+.codegraph/
+
+# Planning & Specification Documentation (Kept local, excluded from Git)
+[0-9][0-9]_*.md
+phase-results/
+.stitch/
+architecture-diagrams/
+screenshots/
