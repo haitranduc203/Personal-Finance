@@ -1,5 +1,7 @@
 package com.fintrack.app.ui.screens.add_edit
 
+import android.app.DatePickerDialog
+import android.app.TimePickerDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
@@ -23,22 +26,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.DirectionsCar
-import androidx.compose.material.icons.filled.Fastfood
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LocalHospital
-import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material.icons.filled.School
-import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.SportsEsports
-import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -51,36 +47,32 @@ import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.data.local.entity.CategoryEntity
+import com.fintrack.app.data.local.model.CategoryType
+import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
-
-data class CategoryItemUi(
-    val id: Long,
-    val name: String,
-    val icon: ImageVector,
-    val color: Color
-)
+import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.viewmodel.AppViewModelProvider
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /**
  * Stateful entry composable for Add/Edit Transaction Screen.
@@ -89,49 +81,76 @@ data class CategoryItemUi(
 fun AddEditTransactionScreen(
     transactionId: Long? = null,
     onNavigateBack: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: AddEditTransactionViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    var selectedTypeIndex by remember { mutableIntStateOf(0) } // 0: Expense, 1: Income
-    var amountText by remember { mutableStateOf("") }
-    var selectedCategoryId by remember { mutableLongStateOf(1L) }
-    var dateText by remember { mutableStateOf("15/08/2026") }
-    var noteText by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
-    val expenseCategories = listOf(
-        CategoryItemUi(1L, "Ăn uống", Icons.Default.Fastfood, Color(0xFFFFA000)),
-        CategoryItemUi(2L, "Mua sắm", Icons.Default.ShoppingCart, Color(0xFF7B1FA2)),
-        CategoryItemUi(3L, "Đi lại", Icons.Default.DirectionsCar, Color(0xFF0288D1)),
-        CategoryItemUi(4L, "Nhà cửa", Icons.Default.Home, Color(0xFF5D4037)),
-        CategoryItemUi(5L, "Giải trí", Icons.Default.SportsEsports, Color(0xFFE91E63)),
-        CategoryItemUi(6L, "Y tế", Icons.Default.LocalHospital, Color(0xFFD32F2F)),
-        CategoryItemUi(7L, "Giáo dục", Icons.Default.School, Color(0xFF388E3C))
-    )
+    LaunchedEffect(transactionId) {
+        viewModel.initForTransaction(transactionId)
+    }
 
-    val incomeCategories = listOf(
-        CategoryItemUi(8L, "Tiền lương", Icons.Default.Paid, SemanticGreen),
-        CategoryItemUi(9L, "Thưởng", Icons.Default.Work, Color(0xFF00796B)),
-        CategoryItemUi(10L, "Đầu tư", Icons.Default.Paid, Color(0xFF1976D2))
-    )
+    LaunchedEffect(uiState.isSaved) {
+        if (uiState.isSaved) {
+            onNavigateBack()
+        }
+    }
 
-    val activeCategories = if (selectedTypeIndex == 0) expenseCategories else incomeCategories
+    val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+    val onDateClick = {
+        val currentDt = uiState.dateTime
+        DatePickerDialog(
+            context,
+            { _, year, month, dayOfMonth ->
+                viewModel.onDateTimeChange(
+                    currentDt.withYear(year).withMonth(month + 1).withDayOfMonth(dayOfMonth)
+                )
+            },
+            currentDt.year,
+            currentDt.monthValue - 1,
+            currentDt.dayOfMonth
+        ).show()
+    }
+
+    val onTimeClick = {
+        val currentDt = uiState.dateTime
+        TimePickerDialog(
+            context,
+            { _, hourOfDay, minute ->
+                viewModel.onDateTimeChange(
+                    currentDt.withHour(hourOfDay).withMinute(minute)
+                )
+            },
+            currentDt.hour,
+            currentDt.minute,
+            true
+        ).show()
+    }
 
     AddEditTransactionScreenContent(
-        isEditMode = transactionId != null,
-        selectedTypeIndex = selectedTypeIndex,
-        onTypeSelected = {
-            selectedTypeIndex = it
-            selectedCategoryId = if (it == 0) expenseCategories.first().id else incomeCategories.first().id
-        },
-        amountText = amountText,
-        onAmountChange = { amountText = it },
-        categories = activeCategories,
-        selectedCategoryId = selectedCategoryId,
-        onCategorySelected = { selectedCategoryId = it },
-        dateText = dateText,
-        onDateClick = { /* Date picker dialog in later milestone */ },
-        noteText = noteText,
-        onNoteChange = { noteText = it },
-        onSaveClick = onNavigateBack,
+        isEditMode = uiState.isEditing,
+        selectedType = uiState.type,
+        onTypeSelected = viewModel::onTypeChange,
+        amountText = uiState.amountInput,
+        amountError = uiState.amountError,
+        onAmountChange = viewModel::onAmountChange,
+        categories = uiState.categories,
+        selectedCategory = uiState.selectedCategory,
+        categoryError = uiState.categoryError,
+        onCategorySelected = viewModel::onCategorySelect,
+        dateFormatted = uiState.dateTime.format(dateFormatter),
+        timeFormatted = uiState.dateTime.format(timeFormatter),
+        onDateClick = onDateClick,
+        onTimeClick = onTimeClick,
+        noteText = uiState.note,
+        onNoteChange = viewModel::onNoteChange,
+        isSubmitting = uiState.isSubmitting,
+        isLoading = uiState.isLoading,
+        generalError = uiState.generalError,
+        onSaveClick = viewModel::saveTransaction,
         onCancelClick = onNavigateBack,
         modifier = modifier
     )
@@ -144,264 +163,457 @@ fun AddEditTransactionScreen(
 @Composable
 fun AddEditTransactionScreenContent(
     isEditMode: Boolean,
-    selectedTypeIndex: Int,
-    onTypeSelected: (Int) -> Unit,
+    selectedType: TransactionType,
+    onTypeSelected: (TransactionType) -> Unit,
     amountText: String,
+    amountError: String?,
     onAmountChange: (String) -> Unit,
-    categories: List<CategoryItemUi>,
-    selectedCategoryId: Long,
-    onCategorySelected: (Long) -> Unit,
-    dateText: String,
+    categories: List<CategoryEntity>,
+    selectedCategory: CategoryEntity?,
+    categoryError: String?,
+    onCategorySelected: (CategoryEntity) -> Unit,
+    dateFormatted: String,
+    timeFormatted: String,
     onDateClick: () -> Unit,
+    onTimeClick: () -> Unit,
     noteText: String,
     onNoteChange: (String) -> Unit,
+    isSubmitting: Boolean,
+    isLoading: Boolean,
+    generalError: String?,
     onSaveClick: () -> Unit,
     onCancelClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val typeLabels = listOf("Khoản chi", "Khoản thu")
-
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top App Bar
-        TopAppBar(
-            title = {
-                Text(
-                    text = if (isEditMode) "Chỉnh sửa giao dịch" else "Thêm giao dịch mới",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimary
+        // Compact Header
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(start = 8.dp, top = 6.dp, end = 16.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onCancelClick) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Quay lại",
+                    tint = MaterialTheme.colorScheme.onSurface
                 )
-            },
-            navigationIcon = {
-                IconButton(onClick = onCancelClick) {
-                    Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Quay lại",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        )
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            Column {
+                Text(
+                    text = if (isEditMode) "Cập nhật giao dịch" else "Thêm giao dịch mới",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = if (isEditMode) "Sửa thông tin thu chi" else "Ghi chép dòng tiền của bạn",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+            return
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 8.dp, end = 16.dp, bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // General Error Banner
+            if (generalError != null) {
+                item {
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = SemanticRed.copy(alpha = 0.1f)
+                    ) {
+                        Text(
+                            text = generalError,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = SemanticRed,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+            }
+
             // 1. Transaction Type Toggle (Segmented Button)
             item {
+                val types = listOf(TransactionType.EXPENSE, TransactionType.INCOME)
                 SingleChoiceSegmentedButtonRow(
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    typeLabels.forEachIndexed { index, label ->
+                    types.forEachIndexed { index, type ->
+                        val isSelected = selectedType == type
                         SegmentedButton(
-                            shape = SegmentedButtonDefaults.itemShape(index = index, count = typeLabels.size),
-                            onClick = { onTypeSelected(index) },
-                            selected = index == selectedTypeIndex,
+                            shape = SegmentedButtonDefaults.itemShape(index = index, count = types.size),
+                            onClick = { onTypeSelected(type) },
+                            selected = isSelected,
                             colors = SegmentedButtonDefaults.colors(
-                                activeContainerColor = if (selectedTypeIndex == 0) SemanticRed.copy(alpha = 0.15f) else SemanticGreen.copy(alpha = 0.15f),
-                                activeContentColor = if (selectedTypeIndex == 0) SemanticRed else SemanticGreen
+                                activeContainerColor = if (type == TransactionType.EXPENSE) {
+                                    SemanticRed.copy(alpha = 0.15f)
+                                } else {
+                                    SemanticGreen.copy(alpha = 0.15f)
+                                },
+                                activeContentColor = if (type == TransactionType.EXPENSE) SemanticRed else SemanticGreen
                             )
                         ) {
                             Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold
+                                text = if (type == TransactionType.EXPENSE) "Khoản chi (-)" else "Khoản thu (+)",
+                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
                     }
                 }
             }
 
-            // 2. Large Amount Input Card
+            // 2. Amount Input Card
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "Số tiền giao dịch (₫)",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            text = "SỐ TIỀN GIAO DỊCH",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 1.sp
                         )
+                        Spacer(modifier = Modifier.height(10.dp))
 
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = onAmountChange,
                             placeholder = {
                                 Text(
-                                    "0",
-                                    fontSize = 32.sp,
+                                    text = "0",
+                                    fontSize = 28.sp,
                                     fontWeight = FontWeight.Bold,
                                     textAlign = TextAlign.Center,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             },
-                            textStyle = MaterialTheme.typography.headlineLarge.copy(
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            textStyle = MaterialTheme.typography.headlineMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 textAlign = TextAlign.Center,
-                                color = if (selectedTypeIndex == 0) SemanticRed else SemanticGreen
+                                color = if (selectedType == TransactionType.EXPENSE) SemanticRed else SemanticGreen
                             ),
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                            singleLine = true,
+                            suffix = {
+                                Text(
+                                    text = "₫",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            },
+                            isError = amountError != null,
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedBorderColor = Color.Transparent,
-                                unfocusedBorderColor = Color.Transparent
+                                focusedBorderColor = if (selectedType == TransactionType.EXPENSE) SemanticRed else SemanticGreen,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                             ),
+                            shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.fillMaxWidth()
                         )
+
+                        if (amountError != null) {
+                            Text(
+                                text = amountError,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SemanticRed,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 4.dp, start = 4.dp)
+                            )
+                        }
                     }
                 }
             }
 
-            // 3. Category Selector Grid
+            // 3. Category Selector Card
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "DANH MỤC",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                letterSpacing = 1.sp
+                            )
+                            if (selectedCategory != null) {
+                                Text(
+                                    text = selectedCategory.name,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+
+                        if (categories.isEmpty()) {
+                            Text(
+                                text = "Đang tải danh mục...",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        } else {
+                            FlowRow(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                categories.forEach { category ->
+                                    val isSelected = selectedCategory?.id == category.id
+                                    val catColor = CategoryIconHelper.parseColor(category.colorKey)
+                                    val catIcon = CategoryIconHelper.getIconByName(category.iconKey)
+
+                                    Surface(
+                                        shape = RoundedCornerShape(20.dp),
+                                        color = if (isSelected) catColor else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                                        contentColor = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(20.dp))
+                                            .clickable { onCategorySelected(category) }
+                                            .then(
+                                                if (isSelected) Modifier.border(2.dp, catColor, RoundedCornerShape(20.dp))
+                                                else Modifier
+                                            )
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = catIcon,
+                                                contentDescription = category.name,
+                                                tint = if (isSelected) Color.White else catColor,
+                                                modifier = Modifier.size(18.dp)
+                                            )
+                                            Text(
+                                                text = category.name,
+                                                style = MaterialTheme.typography.labelMedium,
+                                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        if (categoryError != null) {
+                            Text(
+                                text = categoryError,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = SemanticRed,
+                                modifier = Modifier.padding(start = 4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 4. Date & Time Selection Card
+            item {
+                Card(
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
                         Text(
-                            text = "Chọn danh mục",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = "THỜI GIAN",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 1.sp
                         )
 
-                        FlowRow(
+                        Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            categories.forEach { category ->
-                                val isSelected = category.id == selectedCategoryId
-                                CategoryGridChip(
-                                    category = category,
-                                    isSelected = isSelected,
-                                    onClick = { onCategorySelected(category.id) }
-                                )
+                            // Date Selector
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onDateClick() }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.CalendarToday,
+                                        contentDescription = "Chọn ngày",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = dateFormatted,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+
+                            // Time Selector
+                            Surface(
+                                shape = RoundedCornerShape(12.dp),
+                                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .clickable { onTimeClick() }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 12.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.AccessTime,
+                                        contentDescription = "Chọn giờ",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Text(
+                                        text = timeFormatted,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // 4. Date & Note Form Card
+            // 5. Note Input Card
             item {
                 Card(
-                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surface
-                    ),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                     elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                 ) {
                     Column(
-                        modifier = Modifier.padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        // Date Picker Field
-                        OutlinedTextField(
-                            value = dateText,
-                            onValueChange = {},
-                            readOnly = true,
-                            label = { Text("Ngày giao dịch") },
-                            trailingIcon = {
-                                IconButton(onClick = onDateClick) {
-                                    Icon(
-                                        Icons.Default.CalendarToday,
-                                        contentDescription = "Chọn ngày",
-                                        tint = MaterialTheme.colorScheme.primary
-                                    )
-                                }
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable(onClick = onDateClick)
+                        Text(
+                            text = "GHI CHÚ (TÙY CHỌN)",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            letterSpacing = 1.sp
                         )
 
-                        // Note Field
                         OutlinedTextField(
                             value = noteText,
                             onValueChange = onNoteChange,
-                            label = { Text("Ghi chú (tùy chọn)") },
-                            placeholder = { Text("Ví dụ: Ăn trưa cùng đồng nghiệp...") },
+                            placeholder = { Text("Ví dụ: Ăn trưa phở bò với bạn bè...") },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Description,
-                                    contentDescription = null,
+                                    contentDescription = "Ghi chú",
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
+                            singleLine = true,
                             shape = RoundedCornerShape(12.dp),
-                            minLines = 2,
-                            maxLines = 4,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
             }
 
-            // 5. Action Buttons (Save & Cancel)
+            // 6. Action Buttons
             item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    OutlinedButton(
+                        onClick = onCancelClick,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(50.dp)
+                    ) {
+                        Text("Hủy bỏ")
+                    }
+
                     Button(
                         onClick = onSaveClick,
+                        enabled = !isSubmitting,
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .height(52.dp)
+                            .weight(1.5f)
+                            .height(50.dp)
                     ) {
-                        Text(
-                            text = if (isEditMode) "Cập nhật giao dịch" else "Lưu giao dịch",
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-
-                    OutlinedButton(
-                        onClick = onCancelClick,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(48.dp)
-                    ) {
-                        Text(
-                            text = "Hủy bỏ",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        if (isSubmitting) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(Icons.Default.Check, contentDescription = "Lưu", modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = if (isEditMode) "Cập nhật" else "Lưu giao dịch",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }
@@ -409,89 +621,35 @@ fun AddEditTransactionScreenContent(
     }
 }
 
-/**
- * Category Chip for Add/Edit Selection Grid.
- */
+@PreviewLightDark
 @Composable
-fun CategoryGridChip(
-    category: CategoryItemUi,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        modifier = modifier
-            .clip(RoundedCornerShape(20.dp))
-            .clickable(onClick = onClick)
-            .then(
-                if (isSelected) {
-                    Modifier.border(2.dp, category.color, RoundedCornerShape(20.dp))
-                } else Modifier
+private fun AddEditTransactionScreenPreview() {
+    FinTrackTheme {
+        AddEditTransactionScreenContent(
+            isEditMode = false,
+            selectedType = TransactionType.EXPENSE,
+            onTypeSelected = {},
+            amountText = "50000",
+            amountError = null,
+            onAmountChange = {},
+            categories = listOf(
+                CategoryEntity(1L, "Ăn uống", "fastfood", "#FFA000", CategoryType.EXPENSE, isDefault = true),
+                CategoryEntity(2L, "Mua sắm", "shopping_cart", "#7B1FA2", CategoryType.EXPENSE, isDefault = true)
             ),
-        shape = RoundedCornerShape(20.dp),
-        color = if (isSelected) category.color.copy(alpha = 0.15f) else MaterialTheme.colorScheme.background
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(category.color.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = category.icon,
-                    contentDescription = null,
-                    tint = category.color,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-
-            Text(
-                text = category.name,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                color = if (isSelected) category.color else MaterialTheme.colorScheme.onSurface
-            )
-
-            if (isSelected) {
-                Icon(
-                    Icons.Default.Check,
-                    contentDescription = "Đã chọn",
-                    tint = category.color,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
-    }
-}
-
-// ----------------------------------------------------
-// Compose Previews
-// ----------------------------------------------------
-
-@PreviewLightDark
-@Composable
-private fun AddEditTransactionExpensePreview() {
-    FinTrackTheme {
-        AddEditTransactionScreen(
-            transactionId = null,
-            onNavigateBack = {}
-        )
-    }
-}
-
-@PreviewLightDark
-@Composable
-private fun AddEditTransactionEditModePreview() {
-    FinTrackTheme {
-        AddEditTransactionScreen(
-            transactionId = 123L,
-            onNavigateBack = {}
+            selectedCategory = CategoryEntity(1L, "Ăn uống", "fastfood", "#FFA000", CategoryType.EXPENSE, isDefault = true),
+            categoryError = null,
+            onCategorySelected = {},
+            dateFormatted = "15/08/2026",
+            timeFormatted = "12:30",
+            onDateClick = {},
+            onTimeClick = {},
+            noteText = "Ăn trưa bún bò",
+            onNoteChange = {},
+            isSubmitting = false,
+            isLoading = false,
+            generalError = null,
+            onSaveClick = {},
+            onCancelClick = {}
         )
     }
 }

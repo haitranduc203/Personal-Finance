@@ -53,10 +53,21 @@ import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
 
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.data.local.model.TransactionType
+import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.viewmodel.AppViewModelProvider
+import java.text.DecimalFormat
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+
 /**
- * Mock Model for UI Skeleton in Milestone 1
+ * Model for rendering a transaction item on the Home Screen.
  */
-data class MockTransaction(
+data class HomeTransactionUi(
     val id: Long,
     val title: String,
     val categoryName: String,
@@ -75,47 +86,45 @@ fun HomeScreen(
     onNavigateToTransactions: () -> Unit,
     onNavigateToTransactionDetail: (Long) -> Unit,
     onNavigateToAddTransaction: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    val sampleTransactions = listOf(
-        MockTransaction(
-            id = 1L,
-            title = "Ăn trưa bún bò",
-            categoryName = "Ăn uống",
-            categoryIcon = Icons.Default.Fastfood,
-            categoryColor = Color(0xFFFFA000),
-            amountFormatted = "-50.000 ₫",
-            isExpense = true,
-            dateFormatted = "Hôm nay, 12:30"
-        ),
-        MockTransaction(
-            id = 2L,
-            title = "Lương tháng 8",
-            categoryName = "Tiền lương",
-            categoryIcon = Icons.Default.Paid,
-            categoryColor = SemanticGreen,
-            amountFormatted = "+18.000.000 ₫",
-            isExpense = false,
-            dateFormatted = "Hôm qua, 09:00"
-        ),
-        MockTransaction(
-            id = 3L,
-            title = "Mua sắm siêu thị",
-            categoryName = "Mua sắm",
-            categoryIcon = Icons.Default.ShoppingCart,
-            categoryColor = Color(0xFF7B1FA2),
-            amountFormatted = "-420.000 ₫",
-            isExpense = true,
-            dateFormatted = "12 Th08, 19:45"
+    val uiState by viewModel.uiState.collectAsState()
+
+    val decimalFormat = DecimalFormat("#,###")
+    val timeFormatter = DateTimeFormatter.ofPattern("dd/MM, HH:mm")
+
+    val transactionsUi = uiState.recentTransactions.map { txWithCat ->
+        val isExpense = txWithCat.transaction.type == TransactionType.EXPENSE
+        val prefix = if (isExpense) "-" else "+"
+        val amountStr = "$prefix${decimalFormat.format(txWithCat.transaction.amount)} ₫"
+        val dt = Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDateTime()
+
+        HomeTransactionUi(
+            id = txWithCat.transaction.id,
+            title = txWithCat.transaction.note ?: txWithCat.category.name,
+            categoryName = txWithCat.category.name,
+            categoryIcon = CategoryIconHelper.getIconByName(txWithCat.category.iconKey),
+            categoryColor = CategoryIconHelper.parseColor(txWithCat.category.colorKey),
+            amountFormatted = amountStr,
+            isExpense = isExpense,
+            dateFormatted = dt.format(timeFormatter)
         )
-    )
+    }
+
+    val balancePrefix = if (uiState.balance < 0) "-" else ""
+    val balanceFormatted = "$balancePrefix${decimalFormat.format(Math.abs(uiState.balance))} ₫"
+    val incomeFormatted = "+${decimalFormat.format(uiState.totalIncome)} ₫"
+    val expenseFormatted = "-${decimalFormat.format(uiState.totalExpense)} ₫"
 
     HomeScreenContent(
-        balanceFormatted = "17.530.000 ₫",
-        incomeFormatted = "18.000.000 ₫",
-        expenseFormatted = "470.000 ₫",
-        selectedMonth = "Tháng 8, 2026",
-        recentTransactions = sampleTransactions,
+        balanceFormatted = balanceFormatted,
+        incomeFormatted = incomeFormatted,
+        expenseFormatted = expenseFormatted,
+        selectedMonth = uiState.selectedMonth,
+        recentTransactions = transactionsUi,
         onSeeAllTransactionsClick = onNavigateToTransactions,
         onTransactionClick = onNavigateToTransactionDetail,
         onAddTransactionClick = onNavigateToAddTransaction,
@@ -133,7 +142,7 @@ fun HomeScreenContent(
     incomeFormatted: String,
     expenseFormatted: String,
     selectedMonth: String,
-    recentTransactions: List<MockTransaction>,
+    recentTransactions: List<HomeTransactionUi>,
     onSeeAllTransactionsClick: () -> Unit,
     onTransactionClick: (Long) -> Unit,
     onAddTransactionClick: () -> Unit,
@@ -465,7 +474,7 @@ fun TrendPreviewCard(
  */
 @Composable
 fun HomeTransactionItem(
-    transaction: MockTransaction,
+    transaction: HomeTransactionUi,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
