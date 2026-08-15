@@ -47,7 +47,8 @@ object AppViewModelProvider {
             SettingsViewModel(
                 application = finTrackApplication(),
                 preferencesRepository = finTrackApplication().preferencesRepository,
-                transactionRepository = finTrackApplication().transactionRepository
+                transactionRepository = finTrackApplication().transactionRepository,
+                categoryRepository = finTrackApplication().categoryRepository
             )
         }
     }

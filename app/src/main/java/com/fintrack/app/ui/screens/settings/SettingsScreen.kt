@@ -12,10 +12,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
@@ -58,15 +60,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.data.local.entity.CategoryEntity
+import com.fintrack.app.data.local.model.CategoryType
 import com.fintrack.app.data.local.preferences.CurrencyConfig
 import com.fintrack.app.ui.theme.FinTrackTheme
+import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
+import com.fintrack.app.ui.util.CategoryIconHelper
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
 
 /**
@@ -97,6 +102,7 @@ fun SettingsScreen(
             isDailyReminderEnabled = uiState.isDailyReminderEnabled,
             onToggleDailyReminder = { viewModel.toggleDailyReminder(it) },
             reminderTime = uiState.reminderTimeFormatted,
+            categoryCountText = if (uiState.categories.isNotEmpty()) "${uiState.categories.size} danh mục" else "12 danh mục",
             onReminderTimeClick = {
                 val currentHour = uiState.userPreferences.reminderHour
                 val currentMinute = uiState.userPreferences.reminderMinute
@@ -110,7 +116,7 @@ fun SettingsScreen(
                     true
                 ).show()
             },
-            onCategoryManagementClick = { /* Navigate to category management */ },
+            onCategoryManagementClick = { viewModel.openCategoryDialog() },
             onResetOnboardingClick = { viewModel.openResetOnboardingDialog() },
             onClearDataClick = { viewModel.openClearDataDialog() },
             onTestNotificationClick = { viewModel.triggerTestNotification() }
@@ -121,6 +127,14 @@ fun SettingsScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 90.dp)
+        )
+    }
+
+    // Category Management Dialog
+    if (uiState.showCategoryDialog) {
+        CategoryManagementDialog(
+            categories = uiState.categories,
+            onDismiss = { viewModel.dismissCategoryDialog() }
         )
     }
 
@@ -160,7 +174,7 @@ fun SettingsScreen(
             text = { Text("Toàn bộ lịch sử giao dịch và cài đặt sẽ được đặt lại về mặc định. Hành động này không thể hoàn tác.") },
             confirmButton = {
                 TextButton(onClick = { viewModel.confirmClearData() }) {
-                    Text("Xóa dữ liệu", color = SemanticRed, fontWeight = FontWeight.Bold)
+                    Text("Xóa hết", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
@@ -173,7 +187,138 @@ fun SettingsScreen(
 }
 
 /**
- * Currency Selection Dialog composable.
+ * Category Management Dialog showing categorized list of all seeded categories.
+ */
+@Composable
+fun CategoryManagementDialog(
+    categories: List<CategoryEntity>,
+    onDismiss: () -> Unit
+) {
+    val expenseCategories = categories.filter { it.type == CategoryType.EXPENSE }
+    val incomeCategories = categories.filter { it.type == CategoryType.INCOME }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Default.Category,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    text = "Danh mục hệ thống (${categories.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        text = {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                item {
+                    Text(
+                        text = "CHI TIÊU (${expenseCategories.size})",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = SemanticRed,
+                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
+                    )
+                }
+                items(expenseCategories) { cat ->
+                    CategoryItemRow(cat)
+                }
+                item {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = "THU NHẬP (${incomeCategories.size})",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = SemanticGreen,
+                        modifier = Modifier.padding(top = 6.dp, bottom = 2.dp)
+                    )
+                }
+                items(incomeCategories) { cat ->
+                    CategoryItemRow(cat)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Đóng")
+            }
+        }
+    )
+}
+
+/**
+ * Single Category Item Row inside Category Management Dialog.
+ */
+@Composable
+private fun CategoryItemRow(category: CategoryEntity) {
+    val icon = CategoryIconHelper.getIconByName(category.iconKey)
+    val color = CategoryIconHelper.parseColor(category.colorKey)
+
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.45f),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(color.copy(alpha = 0.18f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = category.name,
+                    tint = color,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+
+            Text(
+                text = category.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
+
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = color.copy(alpha = 0.15f)
+            ) {
+                Text(
+                    text = if (category.type == CategoryType.EXPENSE) "Chi" else "Thu",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Currency Selection Dialog with Radio Buttons.
  */
 @Composable
 fun CurrencySelectionDialog(
@@ -183,19 +328,20 @@ fun CurrencySelectionDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Chọn đơn vị tiền tệ", fontWeight = FontWeight.Bold) },
+        title = {
+            Text("Chọn đơn vị tiền tệ", fontWeight = FontWeight.Bold)
+        },
         text = {
             Column(modifier = Modifier.selectableGroup()) {
-                CurrencyConfig.values().forEach { currency ->
+                CurrencyConfig.entries.forEach { currency ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
+                            .height(48.dp)
                             .selectable(
                                 selected = (currency == selectedCurrency),
-                                onClick = { onCurrencySelected(currency) },
-                                role = Role.RadioButton
-                            )
-                            .padding(vertical = 10.dp),
+                                onClick = { onCurrencySelected(currency) }
+                            ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         RadioButton(
@@ -236,6 +382,7 @@ fun SettingsScreenContent(
     isDailyReminderEnabled: Boolean,
     onToggleDailyReminder: (Boolean) -> Unit,
     reminderTime: String,
+    categoryCountText: String,
     onReminderTimeClick: () -> Unit,
     onCategoryManagementClick: () -> Unit,
     onResetOnboardingClick: () -> Unit,
@@ -313,92 +460,189 @@ fun SettingsScreenContent(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(start = 16.dp, top = 6.dp, end = 16.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Local Vault Card (Stitch Design)
+            // Local Vault Banner
             item {
-                LocalVaultCard()
+                LocalVaultBanner()
             }
 
-            // 2. Section: Giao diện
+            // GIAO DIỆN & HIỂN THỊ
             item {
                 SettingsSection(title = "GIAO DIỆN & HIỂN THỊ") {
-                    SettingsSwitchItem(
+                    SettingsItem(
                         icon = Icons.Default.DarkMode,
                         title = "Giao diện tối (Dark Theme)",
                         subtitle = "Chuyển đổi tông màu tối để bảo vệ mắt",
-                        checked = isDarkTheme,
-                        onCheckedChange = onToggleTheme
+                        trailingContent = {
+                            Switch(
+                                checked = isDarkTheme,
+                                onCheckedChange = onToggleTheme,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                        }
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsNavigationItem(
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
                         icon = Icons.Default.Paid,
                         title = "Đơn vị tiền tệ",
-                        value = selectedCurrency,
+                        subtitle = null,
+                        trailingContent = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = selectedCurrency,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = "Chọn đơn vị",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
                         onClick = onCurrencyClick
                     )
                 }
             }
 
-            // 3. Section: Nhắc nhở & Thông báo
+            // THÔNG BÁO
             item {
                 SettingsSection(title = "THÔNG BÁO") {
-                    SettingsSwitchItem(
+                    SettingsItem(
                         icon = Icons.Default.Notifications,
                         title = "Nhắc nhở ghi sổ hàng ngày",
                         subtitle = "Nhận thông báo nhắc ghi chép chi tiêu",
-                        checked = isDailyReminderEnabled,
-                        onCheckedChange = onToggleDailyReminder
+                        trailingContent = {
+                            Switch(
+                                checked = isDailyReminderEnabled,
+                                onCheckedChange = onToggleDailyReminder,
+                                colors = SwitchDefaults.colors(
+                                    checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
+                                    checkedTrackColor = MaterialTheme.colorScheme.primary
+                                )
+                            )
+                        }
                     )
                     if (isDailyReminderEnabled) {
-                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                        SettingsNavigationItem(
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                        )
+                        SettingsItem(
                             icon = Icons.Default.AccessTime,
                             title = "Thời gian nhắc nhở",
-                            value = reminderTime,
+                            subtitle = null,
+                            trailingContent = {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = reminderTime,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Icon(
+                                        imageVector = Icons.Default.ChevronRight,
+                                        contentDescription = "Chọn giờ",
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            },
                             onClick = onReminderTimeClick
                         )
                     }
                 }
             }
 
-            // 4. Section: Dữ liệu & Danh mục
+            // QUẢN LÝ DỮ LIỆU
             item {
                 SettingsSection(title = "QUẢN LÝ DỮ LIỆU") {
-                    SettingsNavigationItem(
+                    SettingsItem(
                         icon = Icons.Default.Category,
                         title = "Quản lý danh mục",
-                        value = "12 danh mục",
+                        subtitle = null,
+                        trailingContent = {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = categoryCountText,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Icon(
+                                    imageVector = Icons.Default.ChevronRight,
+                                    contentDescription = "Xem danh mục",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        },
                         onClick = onCategoryManagementClick
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsNavigationItem(
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
                         icon = Icons.Default.RestartAlt,
                         title = "Đặt lại Onboarding",
-                        value = null,
+                        subtitle = null,
+                        trailingContent = {
+                            Icon(
+                                imageVector = Icons.Default.ChevronRight,
+                                contentDescription = "Đặt lại Onboarding",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        },
                         onClick = onResetOnboardingClick
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    SettingsNavigationItem(
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
                         icon = Icons.Default.DeleteForever,
+                        iconTint = MaterialTheme.colorScheme.error,
                         title = "Xóa toàn bộ dữ liệu",
-                        value = null,
-                        titleColor = SemanticRed,
-                        iconTint = SemanticRed,
+                        titleColor = MaterialTheme.colorScheme.error,
+                        subtitle = null,
+                        trailingContent = null,
                         onClick = onClearDataClick
                     )
                 }
             }
 
-            // 5. Section: Giới thiệu
+            // THÔNG TIN ỨNG DỤNG
             item {
                 SettingsSection(title = "THÔNG TIN ỨNG DỤNG") {
-                    SettingsNavigationItem(
+                    SettingsItem(
                         icon = Icons.Default.Info,
                         title = "Phiên bản",
-                        value = "v1.0.0 (Build 2026)",
-                        onClick = {}
+                        subtitle = null,
+                        trailingContent = {
+                            Text(
+                                text = "1.0.0 (Build 2026)",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     )
                 }
             }
@@ -407,13 +651,13 @@ fun SettingsScreenContent(
 }
 
 /**
- * Local Vault Status Card showing local-first SQLite/Room storage.
+ * Local-First Vault security highlight banner.
  */
 @Composable
-fun LocalVaultCard(modifier: Modifier = Modifier) {
+fun LocalVaultBanner(modifier: Modifier = Modifier) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -480,13 +724,13 @@ fun SettingsSection(
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
                 containerColor = MaterialTheme.colorScheme.surface
             ),
             elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
         ) {
-            Column {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 content()
             }
         }
@@ -494,99 +738,51 @@ fun SettingsSection(
 }
 
 /**
- * Settings Navigation Row Item.
+ * Generic row item in settings.
  */
 @Composable
-fun SettingsNavigationItem(
+fun SettingsItem(
     icon: ImageVector,
     title: String,
-    value: String?,
-    onClick: () -> Unit,
+    subtitle: String?,
     modifier: Modifier = Modifier,
+    iconTint: Color = MaterialTheme.colorScheme.primary,
     titleColor: Color = MaterialTheme.colorScheme.onSurface,
-    iconTint: Color = MaterialTheme.colorScheme.primary
+    trailingContent: (@Composable () -> Unit)? = null,
+    onClick: (() -> Unit)? = null
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
         Icon(
             imageVector = icon,
-            contentDescription = null,
+            contentDescription = title,
             tint = iconTint,
             modifier = Modifier.size(22.dp)
         )
-        Text(
-            text = title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = titleColor,
-            modifier = Modifier.weight(1f)
-        )
-        if (value != null) {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        Icon(
-            Icons.Default.ChevronRight,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            modifier = Modifier.size(18.dp)
-        )
-    }
-}
 
-/**
- * Settings Switch Row Item.
- */
-@Composable
-fun SettingsSwitchItem(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp)
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(22.dp)
-        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface
+                fontWeight = FontWeight.Medium,
+                color = titleColor
             )
-            Text(
-                text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
-        Switch(
-            checked = checked,
-            onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = MaterialTheme.colorScheme.primary,
-                checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
-            )
-        )
+
+        trailingContent?.invoke()
     }
 }
 
@@ -606,6 +802,7 @@ private fun SettingsScreenPreview() {
             isDailyReminderEnabled = true,
             onToggleDailyReminder = {},
             reminderTime = "20:00",
+            categoryCountText = "12 danh mục",
             onReminderTimeClick = {},
             onCategoryManagementClick = {},
             onResetOnboardingClick = {},

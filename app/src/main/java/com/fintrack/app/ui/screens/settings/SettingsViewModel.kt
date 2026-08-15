@@ -3,10 +3,12 @@ package com.fintrack.app.ui.screens.settings
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.fintrack.app.data.local.entity.CategoryEntity
 import com.fintrack.app.data.local.preferences.AppThemeConfig
 import com.fintrack.app.data.local.preferences.CurrencyConfig
 import com.fintrack.app.data.local.preferences.UserPreferences
 import com.fintrack.app.data.notification.NotificationHelper
+import com.fintrack.app.data.repository.CategoryRepository
 import com.fintrack.app.data.repository.PreferencesRepository
 import com.fintrack.app.data.repository.TransactionRepository
 import com.fintrack.app.worker.ReminderScheduler
@@ -24,6 +26,8 @@ import kotlinx.coroutines.launch
  */
 data class SettingsUiState(
     val userPreferences: UserPreferences = UserPreferences(),
+    val categories: List<CategoryEntity> = emptyList(),
+    val showCategoryDialog: Boolean = false,
     val showCurrencyDialog: Boolean = false,
     val showTimePickerDialog: Boolean = false,
     val showResetOnboardingDialog: Boolean = false,
@@ -44,17 +48,19 @@ data class SettingsUiState(
 }
 
 /**
- * ViewModel managing user preferences, WorkManager reminders, and application system settings.
+ * ViewModel managing user preferences, WorkManager reminders, categories view, and application system settings.
  */
 class SettingsViewModel(
     application: Application,
     private val preferencesRepository: PreferencesRepository,
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val categoryRepository: CategoryRepository
 ) : AndroidViewModel(application) {
 
     private val _dialogState = MutableStateFlow(DialogState())
 
     private data class DialogState(
+        val showCategoryDialog: Boolean = false,
         val showCurrencyDialog: Boolean = false,
         val showTimePickerDialog: Boolean = false,
         val showResetOnboardingDialog: Boolean = false,
@@ -64,10 +70,13 @@ class SettingsViewModel(
 
     val uiState: StateFlow<SettingsUiState> = combine(
         preferencesRepository.userPreferencesFlow,
+        categoryRepository.observeCategories(),
         _dialogState
-    ) { prefs, dialogs ->
+    ) { prefs, cats, dialogs ->
         SettingsUiState(
             userPreferences = prefs,
+            categories = cats,
+            showCategoryDialog = dialogs.showCategoryDialog,
             showCurrencyDialog = dialogs.showCurrencyDialog,
             showTimePickerDialog = dialogs.showTimePickerDialog,
             showResetOnboardingDialog = dialogs.showResetOnboardingDialog,
@@ -85,6 +94,14 @@ class SettingsViewModel(
             val newTheme = if (enabled) AppThemeConfig.DARK else AppThemeConfig.LIGHT
             preferencesRepository.setTheme(newTheme)
         }
+    }
+
+    fun openCategoryDialog() {
+        _dialogState.update { it.copy(showCategoryDialog = true) }
+    }
+
+    fun dismissCategoryDialog() {
+        _dialogState.update { it.copy(showCategoryDialog = false) }
     }
 
     fun openCurrencyDialog() {

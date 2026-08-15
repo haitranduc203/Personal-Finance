@@ -22,16 +22,19 @@ class SettingsViewModelTest {
 
     private lateinit var fakePreferencesRepository: FakePreferencesRepository
     private lateinit var fakeTransactionRepository: FakeTransactionRepository
+    private lateinit var fakeCategoryRepository: FakeCategoryRepository
     private lateinit var viewModel: SettingsViewModel
 
     @Before
     fun setUp() {
         fakePreferencesRepository = FakePreferencesRepository()
         fakeTransactionRepository = FakeTransactionRepository()
+        fakeCategoryRepository = FakeCategoryRepository()
         viewModel = SettingsViewModel(
             application = Application(),
             preferencesRepository = fakePreferencesRepository,
-            transactionRepository = fakeTransactionRepository
+            transactionRepository = fakeTransactionRepository,
+            categoryRepository = fakeCategoryRepository
         )
     }
 
@@ -42,6 +45,7 @@ class SettingsViewModelTest {
         assertEquals("VND (₫)", state.currencyDisplayName)
         assertTrue(state.isDailyReminderEnabled)
         assertEquals("20:00", state.reminderTimeFormatted)
+        assertEquals(3, state.categories.size)
     }
 
     @Test
@@ -76,6 +80,17 @@ class SettingsViewModelTest {
         val stateTime = viewModel.uiState.first { it.reminderTimeFormatted == "21:30" }
         assertTrue(stateTime.isDailyReminderEnabled)
         assertEquals("21:30", stateTime.reminderTimeFormatted)
+    }
+
+    @Test
+    fun categoryDialog_opensAndDismisses() = runTest {
+        viewModel.openCategoryDialog()
+        val openState = viewModel.uiState.first { it.showCategoryDialog }
+        assertTrue(openState.showCategoryDialog)
+
+        viewModel.dismissCategoryDialog()
+        val closedState = viewModel.uiState.first { !it.showCategoryDialog }
+        assertFalse(closedState.showCategoryDialog)
     }
 
     @Test
