@@ -512,17 +512,24 @@ fun HomeTransactionItem(
             }
 
             // Info
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(2.dp)
+            ) {
                 Text(
                     text = transaction.title,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
                 Text(
                     text = "${transaction.categoryName} • ${transaction.dateFormatted}",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                 )
             }
 
@@ -531,7 +538,9 @@ fun HomeTransactionItem(
                 text = transaction.amountFormatted,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (transaction.isExpense) SemanticRed else SemanticGreen
+                color = if (transaction.isExpense) SemanticRed else SemanticGreen,
+                maxLines = 1,
+                softWrap = false
             )
         }
     }
