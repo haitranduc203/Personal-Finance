@@ -144,28 +144,35 @@ fun HomeScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Top App Bar
-        TopAppBar(
-            title = {
-                Column {
-                    Text(
-                        text = "Xin chào 👋",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f)
-                    )
-                    Text(
-                        text = "FinTrack Dashboard",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-            },
-            actions = {
+        // Compact Header — Slim & Beautiful
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(start = 16.dp, top = 6.dp, end = 16.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = "Xin chào 👋",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "FinTrack Dashboard",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.15f),
-                    modifier = Modifier.padding(end = 8.dp)
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
                 ) {
                     Row(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
@@ -175,32 +182,34 @@ fun HomeScreenContent(
                         Icon(
                             Icons.Default.DateRange,
                             contentDescription = "Chọn tháng",
-                            tint = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.size(16.dp)
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(14.dp)
                         )
                         Text(
                             text = selectedMonth,
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
-                IconButton(onClick = { /* Notification action */ }) {
+                IconButton(
+                    onClick = { /* Notification action */ },
+                    modifier = Modifier.size(36.dp)
+                ) {
                     Icon(
                         Icons.Default.Notifications,
                         contentDescription = "Thông báo",
-                        tint = MaterialTheme.colorScheme.onPrimary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
-            },
-            colors = TopAppBarDefaults.topAppBarColors(
-                containerColor = MaterialTheme.colorScheme.primary
-            )
-        )
+            }
+        }
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, top = 12.dp, end = 16.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // 1. Hero Balance Card
@@ -316,13 +325,13 @@ fun HeroBalanceCard(
                     color = SemanticGreen.copy(alpha = 0.08f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(28.dp)
                                 .clip(CircleShape)
                                 .background(SemanticGreen.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -331,10 +340,10 @@ fun HeroBalanceCard(
                                 Icons.Default.ArrowDownward,
                                 contentDescription = "Thu nhập",
                                 tint = SemanticGreen,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Tiền thu",
                                 style = MaterialTheme.typography.labelSmall,
@@ -342,9 +351,10 @@ fun HeroBalanceCard(
                             )
                             Text(
                                 text = income,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = SemanticGreen
+                                color = SemanticGreen,
+                                maxLines = 1
                             )
                         }
                     }
@@ -357,13 +367,13 @@ fun HeroBalanceCard(
                     color = SemanticRed.copy(alpha = 0.08f)
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(28.dp)
                                 .clip(CircleShape)
                                 .background(SemanticRed.copy(alpha = 0.15f)),
                             contentAlignment = Alignment.Center
@@ -372,10 +382,10 @@ fun HeroBalanceCard(
                                 Icons.Default.ArrowUpward,
                                 contentDescription = "Chi tiêu",
                                 tint = SemanticRed,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
-                        Column {
+                        Column(modifier = Modifier.weight(1f)) {
                             Text(
                                 text = "Tiền chi",
                                 style = MaterialTheme.typography.labelSmall,
@@ -383,9 +393,10 @@ fun HeroBalanceCard(
                             )
                             Text(
                                 text = expense,
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodySmall,
                                 fontWeight = FontWeight.Bold,
-                                color = SemanticRed
+                                color = SemanticRed,
+                                maxLines = 1
                             )
                         }
                     }

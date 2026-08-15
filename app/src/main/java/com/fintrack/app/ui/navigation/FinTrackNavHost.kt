@@ -10,6 +10,7 @@ import com.fintrack.app.ui.screens.add_edit.AddEditTransactionScreen
 import com.fintrack.app.ui.screens.detail.TransactionDetailScreen
 import com.fintrack.app.ui.screens.home.HomeScreen
 import com.fintrack.app.ui.screens.settings.SettingsScreen
+import com.fintrack.app.ui.screens.splash.SplashScreen
 import com.fintrack.app.ui.screens.statistics.StatisticsScreen
 import com.fintrack.app.ui.screens.transactions.TransactionsScreen
 
@@ -20,13 +21,26 @@ import com.fintrack.app.ui.screens.transactions.TransactionsScreen
 fun FinTrackNavHost(
     navController: NavHostController,
     modifier: Modifier = Modifier,
-    startDestination: Screen = Screen.Home
+    startDestination: Screen = Screen.Splash
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination,
         modifier = modifier
     ) {
+        // 0. Splash Destination
+        composable<Screen.Splash> {
+            SplashScreen(
+                onSplashFinished = {
+                    navController.navigate(Screen.Home) {
+                        popUpTo(Screen.Splash) {
+                            inclusive = true
+                        }
+                    }
+                }
+            )
+        }
+
         // 1. Home Destination
         composable<Screen.Home> {
             HomeScreen(
