@@ -112,7 +112,8 @@ fun SettingsScreen(
             },
             onCategoryManagementClick = { /* Navigate to category management */ },
             onResetOnboardingClick = { viewModel.openResetOnboardingDialog() },
-            onClearDataClick = { viewModel.openClearDataDialog() }
+            onClearDataClick = { viewModel.openClearDataDialog() },
+            onTestNotificationClick = { viewModel.triggerTestNotification() }
         )
 
         SnackbarHost(
@@ -239,6 +240,7 @@ fun SettingsScreenContent(
     onCategoryManagementClick: () -> Unit,
     onResetOnboardingClick: () -> Unit,
     onClearDataClick: () -> Unit,
+    onTestNotificationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -296,12 +298,12 @@ fun SettingsScreenContent(
                     }
                 }
                 IconButton(
-                    onClick = { /* Notification action */ },
+                    onClick = onTestNotificationClick,
                     modifier = Modifier.size(36.dp)
                 ) {
                     Icon(
                         Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
+                        contentDescription = "Thử thông báo",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -607,7 +609,8 @@ private fun SettingsScreenPreview() {
             onReminderTimeClick = {},
             onCategoryManagementClick = {},
             onResetOnboardingClick = {},
-            onClearDataClick = {}
+            onClearDataClick = {},
+            onTestNotificationClick = {}
         )
     }
 }

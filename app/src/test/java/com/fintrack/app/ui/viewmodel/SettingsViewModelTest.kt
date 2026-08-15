@@ -1,5 +1,6 @@
 package com.fintrack.app.ui.viewmodel
 
+import android.app.Application
 import com.fintrack.app.data.local.preferences.AppThemeConfig
 import com.fintrack.app.data.local.preferences.CurrencyConfig
 import com.fintrack.app.ui.screens.settings.SettingsViewModel
@@ -27,7 +28,11 @@ class SettingsViewModelTest {
     fun setUp() {
         fakePreferencesRepository = FakePreferencesRepository()
         fakeTransactionRepository = FakeTransactionRepository()
-        viewModel = SettingsViewModel(fakePreferencesRepository, fakeTransactionRepository)
+        viewModel = SettingsViewModel(
+            application = Application(),
+            preferencesRepository = fakePreferencesRepository,
+            transactionRepository = fakeTransactionRepository
+        )
     }
 
     @Test

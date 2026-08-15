@@ -45,6 +45,7 @@ object AppViewModelProvider {
         }
         initializer {
             SettingsViewModel(
+                application = finTrackApplication(),
                 preferencesRepository = finTrackApplication().preferencesRepository,
                 transactionRepository = finTrackApplication().transactionRepository
             )
