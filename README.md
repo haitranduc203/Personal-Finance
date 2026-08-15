@@ -30,14 +30,14 @@
 ## Giao diện ứng dụng
 
 <p align="center">
-  <img src="screenshots/m3_home_populated.png" alt="Home Dashboard" width="31%" />
-  <img src="screenshots/m3_tx_with_item.png" alt="Danh sách Giao dịch" width="31%" />
-  <img src="screenshots/m4_stats_fixed.png" alt="Thống kê & Biểu đồ" width="31%" />
+  <img src="screenshots/01_home_dashboard.png" alt="Home Dashboard" width="31%" />
+  <img src="screenshots/02_transactions_filter.png" alt="Danh sách Giao dịch & Bộ lọc" width="31%" />
+  <img src="screenshots/03_statistics_charts.png" alt="Thống kê & Biểu đồ Tương tác" width="31%" />
 </p>
 <p align="center">
-  <img src="screenshots/m5_home_dark.png" alt="Chế độ Tối Dark Theme" width="31%" />
-  <img src="screenshots/m6_notification_live.png" alt="Thông báo nhắc nhở WorkManager" width="31%" />
-  <img src="screenshots/m7_categories_dialog.png" alt="Quản lý 12 Danh mục" width="31%" />
+  <img src="screenshots/04_add_transaction.png" alt="Thêm & Chỉnh sửa Giao dịch" width="31%" />
+  <img src="screenshots/05_settings_dark.png" alt="Chế độ Tối & Cài đặt Bảo mật" width="31%" />
+  <img src="screenshots/06_category_management.png" alt="Quản lý 12 Danh mục Hệ thống" width="31%" />
 </p>
 
 ---
