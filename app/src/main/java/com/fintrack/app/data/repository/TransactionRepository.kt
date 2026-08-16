@@ -43,4 +43,6 @@ interface TransactionRepository {
     suspend fun deleteTransaction(transaction: TransactionEntity)
 
     suspend fun deleteTransactionById(id: Long)
+
+    suspend fun deleteAllTransactions()
 }

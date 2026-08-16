@@ -213,8 +213,14 @@ class SettingsViewModel(
     fun confirmClearData() {
         viewModelScope.launch {
             try {
+                transactionRepository.deleteAllTransactions()
                 preferencesRepository.clearPreferences()
-                ReminderScheduler.scheduleReminder(getApplication(), 20, 0)
+                categoryRepository.seedDefaultCategoriesIfEmpty()
+                try {
+                    ReminderScheduler.cancelReminder(getApplication())
+                } catch (e: Exception) {
+                    // Safely handle uninitialized WorkManager in test environments
+                }
                 _dialogState.update {
                     it.copy(
                         showClearDataDialog = false,

@@ -71,6 +71,7 @@ data class TransactionItemUi(
     val categoryIcon: ImageVector,
     val categoryColor: Color,
     val amountFormatted: String,
+    val rawAmount: Long,
     val isExpense: Boolean,
     val timeFormatted: String,
     val date: LocalDate
@@ -95,55 +96,6 @@ fun TransactionsScreen(
     val uiState by viewModel.uiState.collectAsState()
 
     val decimalFormat = DecimalFormat("#,###")
-    val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-    val today = LocalDate.now()
-    val yesterday = today.minusDays(1)
-
-    // Map list to UI models and group by date
-    val groups = uiState.filteredTransactions
-        .map { txWithCat ->
-            val isExpense = txWithCat.transaction.type == TransactionType.EXPENSE
-            val prefix = if (isExpense) "-" else "+"
-            val amountStr = "$prefix${decimalFormat.format(txWithCat.transaction.amount)} ₫"
-            val dt = java.time.Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
-                .atZone(java.time.ZoneId.systemDefault())
-                .toLocalDateTime()
-
-            TransactionItemUi(
-                id = txWithCat.transaction.id,
-                title = txWithCat.transaction.note ?: txWithCat.category.name,
-                categoryName = txWithCat.category.name,
-                categoryIcon = CategoryIconHelper.getIconByName(txWithCat.category.iconKey),
-                categoryColor = CategoryIconHelper.parseColor(txWithCat.category.colorKey),
-                amountFormatted = amountStr,
-                isExpense = isExpense,
-                timeFormatted = dt.format(timeFormatter),
-                date = dt.toLocalDate()
-            )
-        }
-        .groupBy { it.date }
-        .map { (date, items) ->
-            val headerTitle = when (date) {
-                today -> "Hôm nay, ${date.format(DateTimeFormatter.ofPattern("dd 'Th'MM"))}"
-                yesterday -> "Hôm qua, ${date.format(DateTimeFormatter.ofPattern("dd 'Th'MM"))}"
-                else -> date.format(DateTimeFormatter.ofPattern("dd 'Th'MM, yyyy"))
-            }
-
-            var netDaily = 0.0
-            items.forEach {
-                val rawAmount = it.amountFormatted.replace(".", "").replace("+", "").replace("-", "").replace(" ₫", "").trim().toDoubleOrNull() ?: 0.0
-                if (it.isExpense) netDaily -= rawAmount else netDaily += rawAmount
-            }
-            val netPrefix = if (netDaily >= 0) "+" else "-"
-            val netStr = "$netPrefix${decimalFormat.format(Math.abs(netDaily))} ₫"
-
-            TransactionGroupUi(
-                dateHeader = headerTitle,
-                dailyNetFormatted = netStr,
-                transactions = items
-            )
-        }
-
     val totalIncomeFormatted = "+${decimalFormat.format(uiState.totalIncome)} ₫"
     val totalExpenseFormatted = "-${decimalFormat.format(uiState.totalExpense)} ₫"
 
@@ -152,10 +104,11 @@ fun TransactionsScreen(
         onSearchQueryChange = viewModel::onSearchQueryChange,
         selectedFilter = uiState.selectedFilter,
         onFilterSelected = viewModel::onFilterSelected,
-        transactionGroups = groups,
+        transactionGroups = uiState.transactionGroups,
         totalCount = uiState.totalCount,
         totalIncomeFormatted = totalIncomeFormatted,
         totalExpenseFormatted = totalExpenseFormatted,
+        currentMonthLabel = uiState.currentMonthLabel,
         isLoading = uiState.isLoading,
         onTransactionClick = onNavigateToDetail,
         onAddTransactionClick = onNavigateToAddTransaction,
@@ -177,6 +130,7 @@ fun TransactionsScreenContent(
     totalCount: Int,
     totalIncomeFormatted: String,
     totalExpenseFormatted: String,
+    currentMonthLabel: String,
     isLoading: Boolean,
     onTransactionClick: (Long) -> Unit,
     onAddTransactionClick: () -> Unit,
@@ -231,7 +185,7 @@ fun TransactionsScreenContent(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Tháng 8, 2026",
+                            text = currentMonthLabel,
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -583,6 +537,7 @@ private fun TransactionsScreenPreview() {
                             categoryIcon = Icons.Default.ReceiptLong,
                             categoryColor = Color(0xFFFFA000),
                             amountFormatted = "-50.000 ₫",
+                            rawAmount = 50000L,
                             isExpense = true,
                             timeFormatted = "12:30",
                             date = LocalDate.now()
@@ -593,6 +548,7 @@ private fun TransactionsScreenPreview() {
             totalCount = 1,
             totalIncomeFormatted = "+0 ₫",
             totalExpenseFormatted = "-50.000 ₫",
+            currentMonthLabel = "Tháng 8, 2026",
             isLoading = false,
             onTransactionClick = {},
             onAddTransactionClick = {}

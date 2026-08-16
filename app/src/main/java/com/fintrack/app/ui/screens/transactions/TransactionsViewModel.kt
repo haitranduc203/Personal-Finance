@@ -5,15 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.data.local.model.TransactionWithCategory
 import com.fintrack.app.data.repository.TransactionRepository
+import com.fintrack.app.ui.util.CategoryIconHelper
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import java.text.DecimalFormat
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.YearMonth
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /**
  * Filter mode for transactions list.
@@ -31,11 +35,13 @@ enum class TransactionFilter(val title: String) {
 data class TransactionsUiState(
     val allTransactions: List<TransactionWithCategory> = emptyList(),
     val filteredTransactions: List<TransactionWithCategory> = emptyList(),
+    val transactionGroups: List<TransactionGroupUi> = emptyList(),
     val searchQuery: String = "",
     val selectedFilter: TransactionFilter = TransactionFilter.ALL,
     val totalIncome: Long = 0L,
     val totalExpense: Long = 0L,
     val totalCount: Int = 0,
+    val currentMonthLabel: String = "",
     val isLoading: Boolean = false
 )
 
@@ -55,7 +61,11 @@ class TransactionsViewModel(
         _selectedFilter
     ) { allTx, query, filter ->
         val now = LocalDateTime.now()
+        val today = LocalDate.now()
+        val yesterday = today.minusDays(1)
         val currentYearMonth = YearMonth.from(now)
+        val decimalFormat = DecimalFormat("#,###")
+        val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
         var incomeSum = 0L
         var expenseSum = 0L
@@ -92,14 +102,61 @@ class TransactionsViewModel(
             matchesFilter && matchesQuery
         }
 
+        // Build grouped UI models — done here once, not on every recomposition
+        val groups = filtered
+            .map { txWithCat ->
+                val isExpense = txWithCat.transaction.type == TransactionType.EXPENSE
+                val prefix = if (isExpense) "-" else "+"
+                val amountStr = "$prefix${decimalFormat.format(txWithCat.transaction.amount)} ₫"
+                val dt = Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDateTime()
+
+                TransactionItemUi(
+                    id = txWithCat.transaction.id,
+                    title = txWithCat.transaction.note ?: txWithCat.category.name,
+                    categoryName = txWithCat.category.name,
+                    categoryIcon = CategoryIconHelper.getIconByName(txWithCat.category.iconKey),
+                    categoryColor = CategoryIconHelper.parseColor(txWithCat.category.colorKey),
+                    amountFormatted = amountStr,
+                    rawAmount = txWithCat.transaction.amount,
+                    isExpense = isExpense,
+                    timeFormatted = dt.format(timeFormatter),
+                    date = dt.toLocalDate()
+                )
+            }
+            .groupBy { it.date }
+            .map { (date, items) ->
+                val headerTitle = when (date) {
+                    today -> "Hôm nay, ${date.format(DateTimeFormatter.ofPattern("dd 'Th'MM"))}"
+                    yesterday -> "Hôm qua, ${date.format(DateTimeFormatter.ofPattern("dd 'Th'MM"))}"
+                    else -> date.format(DateTimeFormatter.ofPattern("dd 'Th'MM, yyyy"))
+                }
+                // Tính netDaily từ số nguyên thuần — không parse chuỗi đã format
+                var netDailyAmount = 0L
+                items.forEach { item ->
+                    if (item.isExpense) netDailyAmount -= item.rawAmount else netDailyAmount += item.rawAmount
+                }
+                val netPrefix = if (netDailyAmount >= 0) "+" else "-"
+                val netStr = "$netPrefix${decimalFormat.format(Math.abs(netDailyAmount.toDouble()))} ₫"
+
+                TransactionGroupUi(
+                    dateHeader = headerTitle,
+                    dailyNetFormatted = netStr,
+                    transactions = items
+                )
+            }
+
         TransactionsUiState(
             allTransactions = allTx,
             filteredTransactions = filtered,
+            transactionGroups = groups,
             searchQuery = query,
             selectedFilter = filter,
             totalIncome = incomeSum,
             totalExpense = expenseSum,
             totalCount = filtered.size,
+            currentMonthLabel = "Tháng ${now.monthValue}, ${now.year}",
             isLoading = false
         )
     }.stateIn(

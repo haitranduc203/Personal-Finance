@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.local.model.TransactionWithCategory
 import com.fintrack.app.data.repository.TransactionRepository
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,9 +35,16 @@ class TransactionDetailViewModel(
     private val _uiState = MutableStateFlow(TransactionDetailUiState())
     val uiState: StateFlow<TransactionDetailUiState> = _uiState.asStateFlow()
 
+    /**
+     * Tracks the current load Job so it can be cancelled if [loadTransaction]
+     * is called again before the previous one completes, preventing duplicate collectors.
+     */
+    private var loadJob: Job? = null
+
     fun loadTransaction(id: Long) {
+        loadJob?.cancel()
         _uiState.update { it.copy(isLoading = true, errorMessage = null) }
-        transactionRepository.observeTransactionById(id)
+        loadJob = transactionRepository.observeTransactionById(id)
             .onEach { txWithCat ->
                 if (txWithCat != null) {
                     _uiState.update {

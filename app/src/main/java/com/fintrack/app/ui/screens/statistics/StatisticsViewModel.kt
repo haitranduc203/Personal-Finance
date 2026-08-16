@@ -89,7 +89,7 @@ class StatisticsViewModel(
     val uiState: StateFlow<StatisticsUiState> = _selectedPeriodIndex
         .flatMapLatest { periodIndex ->
             val now = LocalDateTime.now()
-            val (startDate, endDate, periodTitle, daysInPeriod) = calculatePeriodBounds(periodIndex, now)
+            val (startDate, endDate, periodTitle, daysInPeriod, daysElapsed) = calculatePeriodBounds(periodIndex, now)
 
             transactionRepository.observeTransactionsByPeriod(startDate, endDate)
                 .map { transactions ->
@@ -97,6 +97,7 @@ class StatisticsViewModel(
                         periodIndex = periodIndex,
                         periodTitle = periodTitle,
                         daysInPeriod = daysInPeriod,
+                        daysElapsed = daysElapsed,
                         transactions = transactions
                     )
                 }
@@ -115,39 +116,45 @@ class StatisticsViewModel(
         val startDateMillis: Long,
         val endDateMillis: Long,
         val title: String,
-        val daysInPeriod: Int
+        val daysInPeriod: Int,
+        val daysElapsed: Int  // Số ngày thực sự đã trôi qua trong kỳ (để tính daily average chính xác)
     )
 
     private fun calculatePeriodBounds(periodIndex: Int, now: LocalDateTime): PeriodBounds {
         val zone = ZoneId.systemDefault()
+        val today = now.toLocalDate()
         return when (periodIndex) {
             0 -> {
                 // Tuần này (Thứ 2 đến Chủ nhật)
-                val monday = now.toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-                val sunday = now.toLocalDate().with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                val monday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+                val sunday = today.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
                 val start = monday.atStartOfDay(zone).toInstant().toEpochMilli()
                 val end = sunday.atTime(LocalTime.MAX).atZone(zone).toInstant().toEpochMilli()
                 val title = "Tuần ${monday.dayOfMonth}/${monday.monthValue} - ${sunday.dayOfMonth}/${sunday.monthValue}"
-                PeriodBounds(start, end, title, 7)
+                // Số ngày đã trôi qua: từ Thứ 2 đến hôm nay (tối đa 7)
+                val elapsed = (java.time.temporal.ChronoUnit.DAYS.between(monday, minOf(today, sunday)).toInt() + 1).coerceIn(1, 7)
+                PeriodBounds(start, end, title, 7, elapsed)
             }
             1 -> {
                 // Tháng này
-                val firstDay = now.toLocalDate().with(TemporalAdjusters.firstDayOfMonth())
-                val lastDay = now.toLocalDate().with(TemporalAdjusters.lastDayOfMonth())
+                val firstDay = today.with(TemporalAdjusters.firstDayOfMonth())
+                val lastDay = today.with(TemporalAdjusters.lastDayOfMonth())
                 val start = firstDay.atStartOfDay(zone).toInstant().toEpochMilli()
                 val end = lastDay.atTime(LocalTime.MAX).atZone(zone).toInstant().toEpochMilli()
                 val title = "Tháng ${now.monthValue}, ${now.year}"
-                PeriodBounds(start, end, title, lastDay.dayOfMonth)
+                // Số ngày đã trôi qua: ngày hiện tại trong tháng
+                PeriodBounds(start, end, title, lastDay.dayOfMonth, today.dayOfMonth)
             }
             else -> {
                 // Năm này
-                val firstDay = now.toLocalDate().with(TemporalAdjusters.firstDayOfYear())
-                val lastDay = now.toLocalDate().with(TemporalAdjusters.lastDayOfYear())
+                val firstDay = today.with(TemporalAdjusters.firstDayOfYear())
+                val lastDay = today.with(TemporalAdjusters.lastDayOfYear())
                 val start = firstDay.atStartOfDay(zone).toInstant().toEpochMilli()
                 val end = lastDay.atTime(LocalTime.MAX).atZone(zone).toInstant().toEpochMilli()
                 val title = "Năm ${now.year}"
-                val days = if (now.toLocalDate().isLeapYear) 366 else 365
-                PeriodBounds(start, end, title, days)
+                val totalDays = if (today.isLeapYear) 366 else 365
+                // Số ngày đã trôi qua: ngày thứ mấy trong năm
+                PeriodBounds(start, end, title, totalDays, today.dayOfYear)
             }
         }
     }
@@ -156,6 +163,7 @@ class StatisticsViewModel(
         periodIndex: Int,
         periodTitle: String,
         daysInPeriod: Int,
+        daysElapsed: Int,
         transactions: List<TransactionWithCategory>
     ): StatisticsUiState {
         var totalIncome = 0L
@@ -182,7 +190,9 @@ class StatisticsViewModel(
             }
         }
 
-        val dailyAvg = if (daysInPeriod > 0) totalExpense / daysInPeriod else 0L
+        // Chia theo số ngày đã thực sự trôi qua (daysElapsed), không phải toàn bộ kỳ (daysInPeriod)
+        // Ví dụ: ngày 16/8 → chia 16, không chia 31
+        val dailyAvg = if (daysElapsed > 0) totalExpense / daysElapsed else 0L
 
         // Category stats sorted by totalAmount DESC
         val categoryStats = expenseCategoryMap.values

@@ -8,9 +8,11 @@ import com.fintrack.app.data.local.model.CategoryType
 import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.data.repository.CategoryRepository
 import com.fintrack.app.data.repository.TransactionRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -19,9 +21,6 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.ZoneId
 
-/**
- * UI State for Add / Edit Transaction Screen.
- */
 data class AddEditTransactionUiState(
     val transactionId: Long? = null,
     val isEditing: Boolean = false,
@@ -39,9 +38,7 @@ data class AddEditTransactionUiState(
     val generalError: String? = null
 )
 
-/**
- * ViewModel managing state and operations for creating or editing transactions.
- */
+@OptIn(ExperimentalCoroutinesApi::class)
 class AddEditTransactionViewModel(
     private val transactionRepository: TransactionRepository,
     private val categoryRepository: CategoryRepository
@@ -50,31 +47,26 @@ class AddEditTransactionViewModel(
     private val _uiState = MutableStateFlow(AddEditTransactionUiState())
     val uiState: StateFlow<AddEditTransactionUiState> = _uiState.asStateFlow()
 
+    /**
+     * Source-of-truth cho transaction type hiện tại.
+     * flatMapLatest tự cancel collector cũ khi type thay đổi,
+     * đảm bảo luôn chỉ có 1 Flow collector category tại mọi thời điểm.
+     */
+    private val _selectedType = MutableStateFlow(TransactionType.EXPENSE)
+
     init {
-        observeCategories()
-    }
-
-    private fun observeCategories() {
-        val catType = if (_uiState.value.type == TransactionType.EXPENSE) {
-            CategoryType.EXPENSE
-        } else {
-            CategoryType.INCOME
-        }
-
-        categoryRepository.observeCategoriesByType(catType)
+        _selectedType
+            .flatMapLatest { type ->
+                val catType = if (type == TransactionType.EXPENSE) CategoryType.EXPENSE else CategoryType.INCOME
+                categoryRepository.observeCategoriesByType(catType)
+            }
             .onEach { categoriesList ->
                 _uiState.update { state ->
                     val currentSelected = state.selectedCategory
-                    val newSelected = if (currentSelected != null && categoriesList.any { it.id == currentSelected.id }) {
-                        currentSelected
-                    } else {
-                        categoriesList.firstOrNull()
-                    }
-                    state.copy(
-                        categories = categoriesList,
-                        selectedCategory = newSelected,
-                        categoryError = null
-                    )
+                    val newSelected = if (currentSelected != null &&
+                        categoriesList.any { it.id == currentSelected.id }
+                    ) currentSelected else categoriesList.firstOrNull()
+                    state.copy(categories = categoriesList, selectedCategory = newSelected, categoryError = null)
                 }
             }
             .launchIn(viewModelScope)
@@ -85,20 +77,17 @@ class AddEditTransactionViewModel(
             _uiState.update { it.copy(isEditing = false, transactionId = null) }
             return
         }
-
         _uiState.update { it.copy(isLoading = true, isEditing = true, transactionId = id) }
         viewModelScope.launch {
             val txWithCat = transactionRepository.getTransactionById(id)
             if (txWithCat != null) {
                 val dt = Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime()
-
+                    .atZone(ZoneId.systemDefault()).toLocalDateTime()
+                // Update _selectedType trước để flatMapLatest chuyển category query đúng loại
+                _selectedType.value = txWithCat.transaction.type
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
-                        isEditing = true,
-                        transactionId = id,
+                        isLoading = false, isEditing = true, transactionId = id,
                         amountInput = txWithCat.transaction.amount.toString(),
                         type = txWithCat.transaction.type,
                         selectedCategory = txWithCat.category,
@@ -106,7 +95,6 @@ class AddEditTransactionViewModel(
                         note = txWithCat.transaction.note ?: ""
                     )
                 }
-                observeCategories()
             } else {
                 _uiState.update { it.copy(isLoading = false, generalError = "Không tìm thấy giao dịch") }
             }
@@ -125,23 +113,13 @@ class AddEditTransactionViewModel(
 
     fun onTypeChange(type: TransactionType) {
         if (_uiState.value.type != type) {
-            _uiState.update {
-                it.copy(
-                    type = type,
-                    selectedCategory = null
-                )
-            }
-            observeCategories()
+            _selectedType.value = type
+            _uiState.update { it.copy(type = type, selectedCategory = null) }
         }
     }
 
     fun onCategorySelect(category: CategoryEntity) {
-        _uiState.update {
-            it.copy(
-                selectedCategory = category,
-                categoryError = null
-            )
-        }
+        _uiState.update { it.copy(selectedCategory = category, categoryError = null) }
     }
 
     fun onDateTimeChange(dateTime: LocalDateTime) {
@@ -165,30 +143,19 @@ class AddEditTransactionViewModel(
             amountError = "Vui lòng nhập số tiền hợp lệ (> 0)"
             hasError = true
         }
-
         if (state.selectedCategory == null) {
             categoryError = "Vui lòng chọn một danh mục"
             hasError = true
         }
-
         if (hasError) {
-            _uiState.update {
-                it.copy(
-                    amountError = amountError,
-                    categoryError = categoryError
-                )
-            }
+            _uiState.update { it.copy(amountError = amountError, categoryError = categoryError) }
             return
         }
 
         _uiState.update { it.copy(isSubmitting = true, amountError = null, categoryError = null) }
         viewModelScope.launch {
             try {
-                val epochMillis = state.dateTime
-                    .atZone(ZoneId.systemDefault())
-                    .toInstant()
-                    .toEpochMilli()
-
+                val epochMillis = state.dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
                 val entity = TransactionEntity(
                     id = state.transactionId ?: 0L,
                     amount = amount!!,
@@ -197,20 +164,15 @@ class AddEditTransactionViewModel(
                     transactionDate = epochMillis,
                     note = state.note.trim().ifEmpty { null }
                 )
-
                 if (state.isEditing && state.transactionId != null) {
                     transactionRepository.updateTransaction(entity)
                 } else {
                     transactionRepository.addTransaction(entity)
                 }
-
                 _uiState.update { it.copy(isSubmitting = false, isSaved = true) }
             } catch (e: Exception) {
                 _uiState.update {
-                    it.copy(
-                        isSubmitting = false,
-                        generalError = "Có lỗi xảy ra: ${e.localizedMessage ?: e.message}"
-                    )
+                    it.copy(isSubmitting = false, generalError = "Có lỗi xảy ra: ${e.localizedMessage ?: e.message}")
                 }
             }
         }
