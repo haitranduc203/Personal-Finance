@@ -104,7 +104,7 @@ class AddEditTransactionViewModel(
     }
 
     fun onAmountChange(input: String) {
-        val cleanInput = input.filter { it.isDigit() }
+        val cleanInput = input.filter { it.isDigit() }.take(15)
         _uiState.update {
             it.copy(
                 amountInput = cleanInput,

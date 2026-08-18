@@ -49,9 +49,13 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -71,6 +75,7 @@ import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
 import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.util.ThousandsSeparatorVisualTransformation
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
 import java.time.format.DateTimeFormatter
 
@@ -307,18 +312,24 @@ fun AddEditTransactionScreenContent(
                         )
                         Spacer(modifier = Modifier.height(10.dp))
 
+                        var isAmountFocused by remember { mutableStateOf(false) }
+
                         OutlinedTextField(
                             value = amountText,
                             onValueChange = onAmountChange,
-                            placeholder = {
-                                Text(
-                                    text = "0",
-                                    fontSize = 28.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            },
+                            visualTransformation = ThousandsSeparatorVisualTransformation('.'),
+                            placeholder = if (!isAmountFocused) {
+                                {
+                                    Text(
+                                        text = "0",
+                                        fontSize = 28.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f),
+                                        modifier = Modifier.fillMaxWidth()
+                                    )
+                                }
+                            } else null,
                             singleLine = true,
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             textStyle = MaterialTheme.typography.headlineMedium.copy(
@@ -332,7 +343,9 @@ fun AddEditTransactionScreenContent(
                                 unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant
                             ),
                             shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .onFocusChanged { isAmountFocused = it.isFocused }
                         )
 
                         if (amountError != null) {
