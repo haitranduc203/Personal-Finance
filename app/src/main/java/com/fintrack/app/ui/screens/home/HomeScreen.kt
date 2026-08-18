@@ -7,13 +7,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -24,10 +21,7 @@ import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DateRange
-import androidx.compose.material.icons.filled.Fastfood
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.Paid
-import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,31 +31,29 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.R
+import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.ui.components.EmptyStateView
 import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
-
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.util.CurrencyFormatter
+import com.fintrack.app.ui.util.toLocalDateTime
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
-import java.text.DecimalFormat
-import java.time.Instant
-import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 /**
@@ -89,22 +81,23 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
-
-    val decimalFormat = DecimalFormat("#,###")
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val timeFormatter = DateTimeFormatter.ofPattern("dd/MM, HH:mm")
 
     val transactionsUi = uiState.recentTransactions.map { txWithCat ->
         val isExpense = txWithCat.transaction.type == TransactionType.EXPENSE
-        val prefix = if (isExpense) "-" else "+"
-        val amountStr = "$prefix${decimalFormat.format(txWithCat.transaction.amount)} ₫"
-        val dt = Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
-            .atZone(ZoneId.systemDefault())
-            .toLocalDateTime()
+        val amountStr = CurrencyFormatter.format(
+            amount = txWithCat.transaction.amount,
+            currency = uiState.currency,
+            withSign = true,
+            isExpense = isExpense,
+            isIncome = !isExpense
+        )
+        val dt = txWithCat.transaction.transactionDate.toLocalDateTime()
 
         HomeTransactionUi(
             id = txWithCat.transaction.id,
-            title = txWithCat.transaction.note ?: txWithCat.category.name,
+            title = txWithCat.transaction.note?.ifBlank { null } ?: txWithCat.category.name,
             categoryName = txWithCat.category.name,
             categoryIcon = CategoryIconHelper.getIconByName(txWithCat.category.iconKey),
             categoryColor = CategoryIconHelper.parseColor(txWithCat.category.colorKey),
@@ -114,10 +107,23 @@ fun HomeScreen(
         )
     }
 
-    val balancePrefix = if (uiState.balance < 0) "-" else ""
-    val balanceFormatted = "$balancePrefix${decimalFormat.format(Math.abs(uiState.balance))} ₫"
-    val incomeFormatted = "+${decimalFormat.format(uiState.totalIncome)} ₫"
-    val expenseFormatted = "-${decimalFormat.format(uiState.totalExpense)} ₫"
+    val balanceFormatted = CurrencyFormatter.format(
+        amount = uiState.balance,
+        currency = uiState.currency,
+        withSign = false
+    )
+    val incomeFormatted = CurrencyFormatter.format(
+        amount = uiState.totalIncome,
+        currency = uiState.currency,
+        withSign = true,
+        isIncome = true
+    )
+    val expenseFormatted = CurrencyFormatter.format(
+        amount = uiState.totalExpense,
+        currency = uiState.currency,
+        withSign = true,
+        isExpense = true
+    )
 
     HomeScreenContent(
         balanceFormatted = balanceFormatted,
@@ -153,7 +159,7 @@ fun HomeScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Compact Header — Slim & Beautiful
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -163,12 +169,12 @@ fun HomeScreenContent(
         ) {
             Column {
                 Text(
-                    text = "Xin chào 👋",
+                    text = stringResource(R.string.home_greeting),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "FinTrack Dashboard",
+                    text = stringResource(R.string.home_dashboard_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -190,7 +196,7 @@ fun HomeScreenContent(
                     ) {
                         Icon(
                             Icons.Default.DateRange,
-                            contentDescription = "Chọn tháng",
+                            contentDescription = stringResource(R.string.home_balance_title),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(14.dp)
                         )
@@ -208,7 +214,7 @@ fun HomeScreenContent(
                 ) {
                     Icon(
                         Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
+                        contentDescription = stringResource(R.string.notif_title),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -243,14 +249,14 @@ fun HomeScreenContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Giao dịch gần đây",
+                        text = stringResource(R.string.home_recent_title),
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                     TextButton(onClick = onSeeAllTransactionsClick) {
                         Text(
-                            text = "Xem tất cả",
+                            text = stringResource(R.string.home_see_all),
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.primary
                         )
@@ -268,9 +274,9 @@ fun HomeScreenContent(
             if (recentTransactions.isEmpty()) {
                 item {
                     EmptyStateView(
-                        title = "Chưa có giao dịch",
-                        description = "Ghi lại chi tiêu đầu tiên để quản lý tài chính hiệu quả.",
-                        actionButtonText = "Thêm giao dịch",
+                        title = stringResource(R.string.home_empty_title),
+                        description = stringResource(R.string.home_empty_desc),
+                        actionButtonText = stringResource(R.string.home_add_transaction),
                         onActionClick = onAddTransactionClick
                     )
                 }
@@ -310,7 +316,7 @@ fun HeroBalanceCard(
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                 Text(
-                    text = "Tổng số dư khả dụng",
+                    text = stringResource(R.string.home_balance_title),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -347,14 +353,14 @@ fun HeroBalanceCard(
                         ) {
                             Icon(
                                 Icons.Default.ArrowDownward,
-                                contentDescription = "Thu nhập",
+                                contentDescription = stringResource(R.string.home_income),
                                 tint = SemanticGreen,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Tiền thu",
+                                text = stringResource(R.string.home_income),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -389,14 +395,14 @@ fun HeroBalanceCard(
                         ) {
                             Icon(
                                 Icons.Default.ArrowUpward,
-                                contentDescription = "Chi tiêu",
+                                contentDescription = stringResource(R.string.home_expense),
                                 tint = SemanticRed,
                                 modifier = Modifier.size(16.dp)
                             )
                         }
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "Tiền chi",
+                                text = stringResource(R.string.home_expense),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -454,13 +460,13 @@ fun TrendPreviewCard(
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Xu hướng chi tiêu tháng này",
+                    text = stringResource(R.string.home_trend_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Bạn đã tiết kiệm được 65% ngân sách dự kiến",
+                    text = stringResource(R.string.home_trend_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -543,22 +549,6 @@ fun HomeTransactionItem(
                 softWrap = false
             )
         }
-    }
-}
-
-// ----------------------------------------------------
-// Compose Previews
-// ----------------------------------------------------
-
-@PreviewLightDark
-@Composable
-private fun HomeScreenPopulatedPreview() {
-    FinTrackTheme {
-        HomeScreen(
-            onNavigateToTransactions = {},
-            onNavigateToTransactionDetail = {},
-            onNavigateToAddTransaction = {}
-        )
     }
 }
 

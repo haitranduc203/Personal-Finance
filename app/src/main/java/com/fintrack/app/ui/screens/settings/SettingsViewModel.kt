@@ -1,6 +1,7 @@
 package com.fintrack.app.ui.screens.settings
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.local.entity.CategoryEntity
@@ -136,7 +137,7 @@ class SettingsViewModel(
                     _dialogState.update { it.copy(message = "Đã tắt thông báo nhắc nhở hàng ngày") }
                 }
             } catch (e: Exception) {
-                // Safely handle uninitialized WorkManager in test environments
+                Log.e("SettingsVM", "Failed to update reminder WorkManager schedule", e)
             }
         }
     }
@@ -162,7 +163,7 @@ class SettingsViewModel(
                     )
                 }
             } catch (e: Exception) {
-                // Safely handle in test environments
+                Log.e("SettingsVM", "Failed to reschedule reminder WorkManager", e)
             }
             _dialogState.update {
                 it.copy(
@@ -178,7 +179,7 @@ class SettingsViewModel(
             NotificationHelper.showDailyReminderNotification(getApplication())
             _dialogState.update { it.copy(message = "Đã gửi thông báo nhắc nhở thử nghiệm 📝") }
         } catch (e: Exception) {
-            // Safely handle in test environments
+            Log.e("SettingsVM", "Failed to trigger test notification", e)
         }
     }
 
@@ -219,7 +220,7 @@ class SettingsViewModel(
                 try {
                     ReminderScheduler.cancelReminder(getApplication())
                 } catch (e: Exception) {
-                    // Safely handle uninitialized WorkManager in test environments
+                    Log.e("SettingsVM", "Failed to cancel WorkManager on clear data", e)
                 }
                 _dialogState.update {
                     it.copy(
@@ -228,6 +229,7 @@ class SettingsViewModel(
                     )
                 }
             } catch (e: Exception) {
+                Log.e("SettingsVM", "Failed to clear application data", e)
                 _dialogState.update {
                     it.copy(
                         showClearDataDialog = false,

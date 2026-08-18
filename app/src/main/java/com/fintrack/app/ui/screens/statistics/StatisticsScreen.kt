@@ -43,15 +43,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.R
 import com.fintrack.app.ui.components.EmptyStateView
 import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
+import com.fintrack.app.ui.util.CategoryIconHelper
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
 
 /**
@@ -81,14 +84,18 @@ fun StatisticsScreenContent(
     onPeriodSelected: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val periods = listOf("Tuần", "Tháng", "Năm")
+    val periods = listOf(
+        stringResource(R.string.stats_period_week),
+        stringResource(R.string.stats_period_month),
+        stringResource(R.string.stats_period_year)
+    )
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // 1. Compact Header — Standardized with Home and Transactions screen
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -98,12 +105,12 @@ fun StatisticsScreenContent(
         ) {
             Column {
                 Text(
-                    text = "Báo cáo & Phân tích",
+                    text = stringResource(R.string.stats_subtitle),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Thống kê tài chính",
+                    text = stringResource(R.string.stats_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -125,12 +132,12 @@ fun StatisticsScreenContent(
                     ) {
                         Icon(
                             Icons.Default.DateRange,
-                            contentDescription = "Khoảng thời gian",
+                            contentDescription = stringResource(R.string.stats_title),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = uiState.periodTitle.ifEmpty { "Tháng này" },
+                            text = uiState.periodTitle.ifEmpty { stringResource(R.string.transactions_filter_this_month) },
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -143,7 +150,7 @@ fun StatisticsScreenContent(
                 ) {
                     Icon(
                         Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
+                        contentDescription = stringResource(R.string.notif_title),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -164,7 +171,7 @@ fun StatisticsScreenContent(
                 contentPadding = PaddingValues(start = 16.dp, top = 4.dp, end = 16.dp, bottom = 100.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Period Selector (Segmented Button)
+                // 1. Period Selector
                 item {
                     SingleChoiceSegmentedButtonRow(
                         modifier = Modifier.fillMaxWidth()
@@ -181,7 +188,7 @@ fun StatisticsScreenContent(
                     }
                 }
 
-                // 2. Summary KPI Cards (3 Cards in a Row)
+                // 2. Summary KPI Cards
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -189,21 +196,21 @@ fun StatisticsScreenContent(
                     ) {
                         // Total Expense Card
                         KpiCard(
-                            title = "Tổng chi",
+                            title = stringResource(R.string.stats_total_expense),
                             amount = uiState.totalExpenseFormatted,
                             color = SemanticRed,
                             modifier = Modifier.weight(1f)
                         )
                         // Total Income Card
                         KpiCard(
-                            title = "Tổng thu",
+                            title = stringResource(R.string.stats_total_income),
                             amount = uiState.totalIncomeFormatted,
                             color = SemanticGreen,
                             modifier = Modifier.weight(1f)
                         )
                         // Daily Average Card
                         KpiCard(
-                            title = "Trung bình/ngày",
+                            title = stringResource(R.string.stats_daily_avg),
                             amount = uiState.dailyAverageFormatted,
                             color = MaterialTheme.colorScheme.secondary,
                             modifier = Modifier.weight(1f)
@@ -211,12 +218,12 @@ fun StatisticsScreenContent(
                     }
                 }
 
-                // 3. Category Breakdown Card (Canvas Donut Chart)
+                // 3. Category Breakdown Card
                 item {
                     CategoryBreakdownCard(categoryStats = uiState.categoryStats)
                 }
 
-                // 4. Trend Bar Chart (Grouped Income vs Expense)
+                // 4. Trend Bar Chart
                 item {
                     TrendBarChartCard(
                         barChartGroups = uiState.barChartGroups,
@@ -288,7 +295,7 @@ fun CategoryBreakdownCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Cơ cấu chi tiêu theo danh mục",
+                text = stringResource(R.string.stats_category_breakdown),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
@@ -296,8 +303,8 @@ fun CategoryBreakdownCard(
 
             if (categoryStats.isEmpty()) {
                 EmptyStateView(
-                    title = "Chưa có dữ liệu chi tiêu",
-                    description = "Biểu đồ phân bổ sẽ hiển thị ngay khi bạn có khoản chi tiêu trong kỳ này."
+                    title = stringResource(R.string.stats_category_empty),
+                    description = stringResource(R.string.transactions_empty_desc)
                 )
             } else {
                 Row(
@@ -313,10 +320,11 @@ fun CategoryBreakdownCard(
                         Canvas(modifier = Modifier.size(76.dp)) {
                             var startAngle = -90f
                             categoryStats.forEach { stat ->
+                                val color = CategoryIconHelper.parseColor(stat.colorKey)
                                 val sweep = stat.percentage * 360f
                                 if (sweep > 0f) {
                                     drawArc(
-                                        color = stat.color,
+                                        color = color,
                                         startAngle = startAngle,
                                         sweepAngle = sweep,
                                         useCenter = false,
@@ -340,6 +348,7 @@ fun CategoryBreakdownCard(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         categoryStats.take(4).forEach { stat ->
+                            val color = CategoryIconHelper.parseColor(stat.colorKey)
                             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
@@ -355,7 +364,7 @@ fun CategoryBreakdownCard(
                                             modifier = Modifier
                                                 .size(8.dp)
                                                 .clip(CircleShape)
-                                                .background(stat.color)
+                                                .background(color)
                                         )
                                         Text(
                                             text = stat.name,
@@ -382,7 +391,7 @@ fun CategoryBreakdownCard(
                                         .fillMaxWidth()
                                         .height(6.dp)
                                         .clip(RoundedCornerShape(3.dp)),
-                                    color = stat.color,
+                                    color = color,
                                     trackColor = MaterialTheme.colorScheme.surfaceVariant
                                 )
                             }
@@ -404,9 +413,9 @@ fun TrendBarChartCard(
     modifier: Modifier = Modifier
 ) {
     val title = when (periodIndex) {
-        0 -> "So sánh Thu - Chi theo ngày"
-        1 -> "So sánh Thu - Chi theo tuần"
-        else -> "So sánh Thu - Chi theo quý"
+        0 -> stringResource(R.string.stats_trend_daily)
+        1 -> stringResource(R.string.stats_trend_weekly)
+        else -> stringResource(R.string.stats_trend_quarterly)
     }
 
     Card(
@@ -501,7 +510,7 @@ fun TrendBarChartCard(
                             .background(SemanticGreen)
                     )
                     Text(
-                        text = "Tiền thu",
+                        text = stringResource(R.string.stats_legend_income),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -518,7 +527,7 @@ fun TrendBarChartCard(
                             .background(SemanticRed)
                     )
                     Text(
-                        text = "Tiền chi",
+                        text = stringResource(R.string.stats_legend_expense),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -527,10 +536,6 @@ fun TrendBarChartCard(
         }
     }
 }
-
-// ----------------------------------------------------
-// Compose Previews
-// ----------------------------------------------------
 
 @PreviewLightDark
 @Composable
@@ -547,9 +552,9 @@ private fun StatisticsScreenPopulatedPreview() {
                 dailyAverage = 18000L,
                 dailyAverageFormatted = "-18.000 ₫",
                 categoryStats = listOf(
-                    CategoryStatItem(1, "Mua sắm", "shoppingcart", 420000L, "420.000 ₫", 0.78f, Color(0xFF7B1FA2)),
-                    CategoryStatItem(2, "Ăn uống", "fastfood", 70000L, "70.000 ₫", 0.13f, Color(0xFFFFA000)),
-                    CategoryStatItem(3, "Đi lại", "directionscar", 50000L, "50.000 ₫", 0.09f, Color(0xFF0288D1))
+                    CategoryStatItem(1, "Mua sắm", "shoppingcart", "#7B1FA2", 420000L, "420.000 ₫", 0.78f),
+                    CategoryStatItem(2, "Ăn uống", "fastfood", "#FFA000", 70000L, "70.000 ₫", 0.13f),
+                    CategoryStatItem(3, "Đi lại", "directionscar", "#0288D1", 50000L, "50.000 ₫", 0.09f)
                 ),
                 barChartGroups = listOf(
                     BarChartGroup("Tuần 1", 10000000L, 200000L, 1.0f, 0.4f),

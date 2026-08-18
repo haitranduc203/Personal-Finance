@@ -1,30 +1,26 @@
 package com.fintrack.app.ui.screens.statistics
 
-import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.fintrack.app.data.local.model.CategoryExpense
 import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.data.local.model.TransactionWithCategory
+import com.fintrack.app.data.local.preferences.CurrencyConfig
+import com.fintrack.app.data.repository.PreferencesRepository
 import com.fintrack.app.data.repository.TransactionRepository
-import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.util.CurrencyFormatter
+import com.fintrack.app.ui.util.toLocalDateTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import java.text.NumberFormat
 import java.time.DayOfWeek
-import java.time.Instant
-import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.LocalTime
-import java.time.YearMonth
 import java.time.ZoneId
 import java.time.temporal.TemporalAdjusters
-import java.util.Locale
 
 /**
  * Period options for statistics filtering.
@@ -36,16 +32,16 @@ enum class StatisticsPeriod(val title: String) {
 }
 
 /**
- * UI model representing expense breakdown for a single category.
+ * Clean UI domain model representing expense breakdown for a single category.
  */
 data class CategoryStatItem(
     val categoryId: Long,
     val name: String,
     val iconKey: String,
+    val colorKey: String,
     val totalAmount: Long,
     val totalAmountFormatted: String,
-    val percentage: Float, // 0.0 to 1.0
-    val color: Color
+    val percentage: Float // 0.0 to 1.0
 )
 
 /**
@@ -71,6 +67,7 @@ data class StatisticsUiState(
     val totalExpenseFormatted: String = "-0 ₫",
     val dailyAverage: Long = 0L,
     val dailyAverageFormatted: String = "-0 ₫",
+    val currency: CurrencyConfig = CurrencyConfig.VND,
     val categoryStats: List<CategoryStatItem> = emptyList(),
     val barChartGroups: List<BarChartGroup> = emptyList(),
     val isLoading: Boolean = false
@@ -81,7 +78,8 @@ data class StatisticsUiState(
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatisticsViewModel(
-    private val transactionRepository: TransactionRepository
+    private val transactionRepository: TransactionRepository,
+    private val preferencesRepository: PreferencesRepository
 ) : ViewModel() {
 
     private val _selectedPeriodIndex = MutableStateFlow(1) // Default: Tháng (Month)
@@ -91,16 +89,19 @@ class StatisticsViewModel(
             val now = LocalDateTime.now()
             val (startDate, endDate, periodTitle, daysInPeriod, daysElapsed) = calculatePeriodBounds(periodIndex, now)
 
-            transactionRepository.observeTransactionsByPeriod(startDate, endDate)
-                .map { transactions ->
-                    calculateStatisticsUiState(
-                        periodIndex = periodIndex,
-                        periodTitle = periodTitle,
-                        daysInPeriod = daysInPeriod,
-                        daysElapsed = daysElapsed,
-                        transactions = transactions
-                    )
-                }
+            combine(
+                transactionRepository.observeTransactionsByPeriod(startDate, endDate),
+                preferencesRepository.userPreferencesFlow
+            ) { transactions, prefs ->
+                calculateStatisticsUiState(
+                    periodIndex = periodIndex,
+                    periodTitle = periodTitle,
+                    daysInPeriod = daysInPeriod,
+                    daysElapsed = daysElapsed,
+                    transactions = transactions,
+                    currency = prefs.currency
+                )
+            }
         }
         .stateIn(
             scope = viewModelScope,
@@ -117,7 +118,7 @@ class StatisticsViewModel(
         val endDateMillis: Long,
         val title: String,
         val daysInPeriod: Int,
-        val daysElapsed: Int  // Số ngày thực sự đã trôi qua trong kỳ (để tính daily average chính xác)
+        val daysElapsed: Int
     )
 
     private fun calculatePeriodBounds(periodIndex: Int, now: LocalDateTime): PeriodBounds {
@@ -131,7 +132,6 @@ class StatisticsViewModel(
                 val start = monday.atStartOfDay(zone).toInstant().toEpochMilli()
                 val end = sunday.atTime(LocalTime.MAX).atZone(zone).toInstant().toEpochMilli()
                 val title = "Tuần ${monday.dayOfMonth}/${monday.monthValue} - ${sunday.dayOfMonth}/${sunday.monthValue}"
-                // Số ngày đã trôi qua: từ Thứ 2 đến hôm nay (tối đa 7)
                 val elapsed = (java.time.temporal.ChronoUnit.DAYS.between(monday, minOf(today, sunday)).toInt() + 1).coerceIn(1, 7)
                 PeriodBounds(start, end, title, 7, elapsed)
             }
@@ -142,7 +142,6 @@ class StatisticsViewModel(
                 val start = firstDay.atStartOfDay(zone).toInstant().toEpochMilli()
                 val end = lastDay.atTime(LocalTime.MAX).atZone(zone).toInstant().toEpochMilli()
                 val title = "Tháng ${now.monthValue}, ${now.year}"
-                // Số ngày đã trôi qua: ngày hiện tại trong tháng
                 PeriodBounds(start, end, title, lastDay.dayOfMonth, today.dayOfMonth)
             }
             else -> {
@@ -153,7 +152,6 @@ class StatisticsViewModel(
                 val end = lastDay.atTime(LocalTime.MAX).atZone(zone).toInstant().toEpochMilli()
                 val title = "Năm ${now.year}"
                 val totalDays = if (today.isLeapYear) 366 else 365
-                // Số ngày đã trôi qua: ngày thứ mấy trong năm
                 PeriodBounds(start, end, title, totalDays, today.dayOfYear)
             }
         }
@@ -164,7 +162,8 @@ class StatisticsViewModel(
         periodTitle: String,
         daysInPeriod: Int,
         daysElapsed: Int,
-        transactions: List<TransactionWithCategory>
+        transactions: List<TransactionWithCategory>,
+        currency: CurrencyConfig
     ): StatisticsUiState {
         var totalIncome = 0L
         var totalExpense = 0L
@@ -190,11 +189,8 @@ class StatisticsViewModel(
             }
         }
 
-        // Chia theo số ngày đã thực sự trôi qua (daysElapsed), không phải toàn bộ kỳ (daysInPeriod)
-        // Ví dụ: ngày 16/8 → chia 16, không chia 31
         val dailyAvg = if (daysElapsed > 0) totalExpense / daysElapsed else 0L
 
-        // Category stats sorted by totalAmount DESC
         val categoryStats = expenseCategoryMap.values
             .sortedByDescending { it.totalAmount }
             .map { acc ->
@@ -205,25 +201,25 @@ class StatisticsViewModel(
                     categoryId = acc.categoryId,
                     name = acc.categoryName,
                     iconKey = acc.iconKey,
+                    colorKey = acc.colorKey,
                     totalAmount = acc.totalAmount,
-                    totalAmountFormatted = formatCurrency(acc.totalAmount, isExpense = false),
-                    percentage = percentage,
-                    color = CategoryIconHelper.parseColor(acc.colorKey)
+                    totalAmountFormatted = CurrencyFormatter.format(acc.totalAmount, currency),
+                    percentage = percentage
                 )
             }
 
-        // Bar Chart groups calculation
         val barChartGroups = generateBarChartGroups(periodIndex, transactions)
 
         return StatisticsUiState(
             selectedPeriodIndex = periodIndex,
             periodTitle = periodTitle,
             totalIncome = totalIncome,
-            totalIncomeFormatted = formatCurrency(totalIncome, isIncome = true),
+            totalIncomeFormatted = CurrencyFormatter.format(totalIncome, currency, withSign = true, isIncome = true),
             totalExpense = totalExpense,
-            totalExpenseFormatted = formatCurrency(totalExpense, isExpense = true),
+            totalExpenseFormatted = CurrencyFormatter.format(totalExpense, currency, withSign = true, isExpense = true),
             dailyAverage = dailyAvg,
-            dailyAverageFormatted = formatCurrency(dailyAvg, isExpense = true),
+            dailyAverageFormatted = CurrencyFormatter.format(dailyAvg, currency, withSign = true, isExpense = true),
+            currency = currency,
             categoryStats = categoryStats,
             barChartGroups = barChartGroups,
             isLoading = false
@@ -242,15 +238,13 @@ class StatisticsViewModel(
         periodIndex: Int,
         transactions: List<TransactionWithCategory>
     ): List<BarChartGroup> {
-        val zone = ZoneId.systemDefault()
         val groups: List<Pair<String, Pair<Long, Long>>> = when (periodIndex) {
             0 -> {
-                // 7 days of week: Thứ 2 -> Chủ nhật
                 val dayLabels = listOf("T2", "T3", "T4", "T5", "T6", "T7", "CN")
                 val dayMap = dayLabels.associateWith { Pair(0L, 0L) }.toMutableMap()
 
                 transactions.forEach { item ->
-                    val dt = Instant.ofEpochMilli(item.transaction.transactionDate).atZone(zone).toLocalDateTime()
+                    val dt = item.transaction.transactionDate.toLocalDateTime()
                     val dayOfWeekIndex = when (dt.dayOfWeek) {
                         DayOfWeek.MONDAY -> 0
                         DayOfWeek.TUESDAY -> 1
@@ -271,12 +265,11 @@ class StatisticsViewModel(
                 dayLabels.map { label -> label to (dayMap[label] ?: Pair(0L, 0L)) }
             }
             1 -> {
-                // 4 weeks in month: Tuần 1 (1-7), Tuần 2 (8-14), Tuần 3 (15-21), Tuần 4 (22-end)
                 val weekLabels = listOf("Tuần 1", "Tuần 2", "Tuần 3", "Tuần 4")
                 val weekMap = weekLabels.associateWith { Pair(0L, 0L) }.toMutableMap()
 
                 transactions.forEach { item ->
-                    val dt = Instant.ofEpochMilli(item.transaction.transactionDate).atZone(zone).toLocalDateTime()
+                    val dt = item.transaction.transactionDate.toLocalDateTime()
                     val day = dt.dayOfMonth
                     val label = when {
                         day <= 7 -> "Tuần 1"
@@ -294,12 +287,11 @@ class StatisticsViewModel(
                 weekLabels.map { label -> label to (weekMap[label] ?: Pair(0L, 0L)) }
             }
             else -> {
-                // 4 quarters in year: Quý 1, Quý 2, Quý 3, Quý 4
                 val quarterLabels = listOf("Quý 1", "Quý 2", "Quý 3", "Quý 4")
                 val quarterMap = quarterLabels.associateWith { Pair(0L, 0L) }.toMutableMap()
 
                 transactions.forEach { item ->
-                    val dt = Instant.ofEpochMilli(item.transaction.transactionDate).atZone(zone).toLocalDateTime()
+                    val dt = item.transaction.transactionDate.toLocalDateTime()
                     val month = dt.monthValue
                     val label = when {
                         month <= 3 -> "Quý 1"
@@ -318,7 +310,6 @@ class StatisticsViewModel(
             }
         }
 
-        // Find max value across all income and expense to normalize bar heights
         var maxAmount = 0L
         groups.forEach { (_, pair) ->
             if (pair.first > maxAmount) maxAmount = pair.first
@@ -338,16 +329,6 @@ class StatisticsViewModel(
                 incomeFraction = if (income > 0) incomeFraction else 0f,
                 expenseFraction = if (expense > 0) expenseFraction else 0f
             )
-        }
-    }
-
-    private fun formatCurrency(amount: Long, isIncome: Boolean = false, isExpense: Boolean = false): String {
-        val formatter = NumberFormat.getNumberInstance(Locale("vi", "VN"))
-        val formatted = formatter.format(amount)
-        return when {
-            isIncome -> "+$formatted ₫"
-            isExpense -> "-$formatted ₫"
-            else -> "$formatted ₫"
         }
     }
 }

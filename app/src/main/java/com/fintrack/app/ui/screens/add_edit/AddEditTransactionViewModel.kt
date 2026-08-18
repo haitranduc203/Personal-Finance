@@ -8,18 +8,25 @@ import com.fintrack.app.data.local.model.CategoryType
 import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.data.repository.CategoryRepository
 import com.fintrack.app.data.repository.TransactionRepository
+import com.fintrack.app.ui.util.toEpochMillis
+import com.fintrack.app.ui.util.toLocalDateTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Instant
 import java.time.LocalDateTime
-import java.time.ZoneId
+
+sealed interface AddEditUiEvent {
+    data object NavigateBack : AddEditUiEvent
+    data class ShowError(val message: String) : AddEditUiEvent
+}
 
 data class AddEditTransactionUiState(
     val transactionId: Long? = null,
@@ -34,7 +41,6 @@ data class AddEditTransactionUiState(
     val categoryError: String? = null,
     val isLoading: Boolean = false,
     val isSubmitting: Boolean = false,
-    val isSaved: Boolean = false,
     val generalError: String? = null
 )
 
@@ -47,11 +53,9 @@ class AddEditTransactionViewModel(
     private val _uiState = MutableStateFlow(AddEditTransactionUiState())
     val uiState: StateFlow<AddEditTransactionUiState> = _uiState.asStateFlow()
 
-    /**
-     * Source-of-truth cho transaction type hiện tại.
-     * flatMapLatest tự cancel collector cũ khi type thay đổi,
-     * đảm bảo luôn chỉ có 1 Flow collector category tại mọi thời điểm.
-     */
+    private val _eventChannel = Channel<AddEditUiEvent>(Channel.BUFFERED)
+    val events = _eventChannel.receiveAsFlow()
+
     private val _selectedType = MutableStateFlow(TransactionType.EXPENSE)
 
     init {
@@ -81,9 +85,7 @@ class AddEditTransactionViewModel(
         viewModelScope.launch {
             val txWithCat = transactionRepository.getTransactionById(id)
             if (txWithCat != null) {
-                val dt = Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
-                    .atZone(ZoneId.systemDefault()).toLocalDateTime()
-                // Update _selectedType trước để flatMapLatest chuyển category query đúng loại
+                val dt = txWithCat.transaction.transactionDate.toLocalDateTime()
                 _selectedType.value = txWithCat.transaction.type
                 _uiState.update {
                     it.copy(
@@ -114,7 +116,7 @@ class AddEditTransactionViewModel(
     fun onTypeChange(type: TransactionType) {
         if (_uiState.value.type != type) {
             _selectedType.value = type
-            _uiState.update { it.copy(type = type, selectedCategory = null) }
+            _uiState.update { it.copy(type = type) }
         }
     }
 
@@ -155,7 +157,7 @@ class AddEditTransactionViewModel(
         _uiState.update { it.copy(isSubmitting = true, amountError = null, categoryError = null) }
         viewModelScope.launch {
             try {
-                val epochMillis = state.dateTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                val epochMillis = state.dateTime.toEpochMillis()
                 val entity = TransactionEntity(
                     id = state.transactionId ?: 0L,
                     amount = amount!!,
@@ -169,7 +171,8 @@ class AddEditTransactionViewModel(
                 } else {
                     transactionRepository.addTransaction(entity)
                 }
-                _uiState.update { it.copy(isSubmitting = false, isSaved = true) }
+                _uiState.update { it.copy(isSubmitting = false) }
+                _eventChannel.send(AddEditUiEvent.NavigateBack)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(isSubmitting = false, generalError = "Có lỗi xảy ra: ${e.localizedMessage ?: e.message}")

@@ -43,31 +43,36 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.FinTrackApplication
+import com.fintrack.app.R
 import com.fintrack.app.data.local.model.TransactionType
-import com.fintrack.app.data.local.model.TransactionWithCategory
+import com.fintrack.app.data.local.preferences.UserPreferences
 import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
 import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.util.CurrencyFormatter
+import com.fintrack.app.ui.util.toLocalDateTime
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
-import java.text.DecimalFormat
 import java.time.format.DateTimeFormatter
 
 data class TransactionDetailUiModel(
     val id: Long,
     val amountFormatted: String,
+    val rawAmountFormatted: String = "",
     val isExpense: Boolean,
     val categoryName: String,
     val categoryIcon: ImageVector,
@@ -88,40 +93,55 @@ fun TransactionDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: TransactionDetailViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val app = LocalContext.current.applicationContext as? FinTrackApplication
+    val prefs by (app?.preferencesRepository?.userPreferencesFlow
+        ?.collectAsStateWithLifecycle(UserPreferences())
+        ?: androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(UserPreferences()) })
 
     LaunchedEffect(transactionId) {
         viewModel.loadTransaction(transactionId)
     }
 
-    LaunchedEffect(uiState.isDeleted) {
-        if (uiState.isDeleted) {
-            onNavigateBack()
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is DetailUiEvent.NavigateBack -> onNavigateBack()
+            }
         }
     }
 
-    val decimalFormat = DecimalFormat("#,###")
     val dateFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
     val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
+    val defaultNoNote = stringResource(R.string.detail_no_note)
     val uiModel = uiState.transaction?.let { txWithCat ->
         val isExpense = txWithCat.transaction.type == TransactionType.EXPENSE
-        val prefix = if (isExpense) "-" else "+"
-        val amountStr = "$prefix${decimalFormat.format(txWithCat.transaction.amount)} ₫"
-        val dt = java.time.Instant.ofEpochMilli(txWithCat.transaction.transactionDate)
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDateTime()
+        val amountStr = CurrencyFormatter.format(
+            amount = txWithCat.transaction.amount,
+            currency = prefs.currency,
+            withSign = true,
+            isExpense = isExpense,
+            isIncome = !isExpense
+        )
+        val rawAmountStr = CurrencyFormatter.format(
+            amount = txWithCat.transaction.amount,
+            currency = prefs.currency,
+            withSign = false
+        )
+        val dt = txWithCat.transaction.transactionDate.toLocalDateTime()
 
         TransactionDetailUiModel(
             id = txWithCat.transaction.id,
             amountFormatted = amountStr,
+            rawAmountFormatted = rawAmountStr,
             isExpense = isExpense,
             categoryName = txWithCat.category.name,
             categoryIcon = CategoryIconHelper.getIconByName(txWithCat.category.iconKey),
             categoryColor = CategoryIconHelper.parseColor(txWithCat.category.colorKey),
             dateFormatted = dt.format(dateFormatter),
             timeFormatted = dt.format(timeFormatter),
-            note = txWithCat.transaction.note ?: "Không có ghi chú"
+            note = txWithCat.transaction.note?.ifBlank { null } ?: defaultNoNote
         )
     }
 
@@ -163,11 +183,10 @@ fun TransactionDetailScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Compact Header
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
                 .padding(start = 8.dp, top = 6.dp, end = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
@@ -176,13 +195,13 @@ fun TransactionDetailScreenContent(
                 IconButton(onClick = onNavigateBack) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Quay lại",
+                        contentDescription = stringResource(R.string.action_back),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
-                    text = "Chi tiết giao dịch",
+                    text = stringResource(R.string.detail_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -194,14 +213,14 @@ fun TransactionDetailScreenContent(
                     IconButton(onClick = onEditClick) {
                         Icon(
                             Icons.Default.Edit,
-                            contentDescription = "Chỉnh sửa",
+                            contentDescription = stringResource(R.string.action_edit),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
                     IconButton(onClick = onDeleteClick) {
                         Icon(
                             Icons.Default.Delete,
-                            contentDescription = "Xóa",
+                            contentDescription = stringResource(R.string.action_delete),
                             tint = SemanticRed
                         )
                     }
@@ -225,13 +244,13 @@ fun TransactionDetailScreenContent(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        text = errorMessage ?: "Không tìm thấy thông tin giao dịch",
+                        text = errorMessage ?: stringResource(R.string.add_error_not_found),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = onNavigateBack) {
-                        Text("Quay lại")
+                        Text(stringResource(R.string.action_back))
                     }
                 }
             }
@@ -305,7 +324,7 @@ fun TransactionDetailScreenContent(
                         )
 
                         Text(
-                            text = if (transaction.isExpense) "Khoản chi tiêu" else "Khoản thu nhập",
+                            text = if (transaction.isExpense) stringResource(R.string.detail_type_expense) else stringResource(R.string.detail_type_income),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -328,28 +347,28 @@ fun TransactionDetailScreenContent(
                     ) {
                         DetailInfoRow(
                             icon = Icons.Default.CalendarMonth,
-                            label = "Ngày giao dịch",
+                            label = stringResource(R.string.detail_date),
                             value = transaction.dateFormatted
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                         DetailInfoRow(
                             icon = Icons.Default.Schedule,
-                            label = "Thời gian",
+                            label = stringResource(R.string.detail_time),
                             value = transaction.timeFormatted
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                         DetailInfoRow(
                             icon = Icons.Default.Category,
-                            label = "Loại giao dịch",
-                            value = if (transaction.isExpense) "Chi phí sinh hoạt" else "Dòng tiền thu vào"
+                            label = stringResource(R.string.detail_type),
+                            value = if (transaction.isExpense) stringResource(R.string.detail_type_expense) else stringResource(R.string.detail_type_income)
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
 
                         DetailInfoRow(
                             icon = Icons.Default.Description,
-                            label = "Ghi chú",
+                            label = stringResource(R.string.detail_note),
                             value = transaction.note
                         )
                     }
@@ -371,9 +390,9 @@ fun TransactionDetailScreenContent(
                             .weight(1f)
                             .height(50.dp)
                     ) {
-                        Icon(Icons.Default.Delete, contentDescription = "Xóa", tint = SemanticRed, modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.action_delete), tint = SemanticRed, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Xóa", color = SemanticRed, fontWeight = FontWeight.SemiBold)
+                        Text(stringResource(R.string.action_delete), color = SemanticRed, fontWeight = FontWeight.SemiBold)
                     }
 
                     Button(
@@ -384,9 +403,9 @@ fun TransactionDetailScreenContent(
                             .weight(1.5f)
                             .height(50.dp)
                     ) {
-                        Icon(Icons.Default.Edit, contentDescription = "Chỉnh sửa", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.action_edit), modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(6.dp))
-                        Text("Chỉnh sửa", fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.action_edit), fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -399,14 +418,17 @@ fun TransactionDetailScreenContent(
             onDismissRequest = onDismissDeleteDialog,
             title = {
                 Text(
-                    text = "Xóa giao dịch này?",
+                    text = stringResource(R.string.detail_delete_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
+                val displayAmount = transaction?.rawAmountFormatted?.ifBlank { null }
+                    ?: transaction?.amountFormatted?.removePrefix("-")?.removePrefix("+")
+                    ?: ""
                 Text(
-                    text = "Bạn có chắc chắn muốn xóa giao dịch \"${transaction?.categoryName} - ${transaction?.amountFormatted}\"? Hành động này không thể hoàn tác.",
+                    text = stringResource(R.string.detail_delete_msg, transaction?.categoryName.orEmpty(), displayAmount),
                     style = MaterialTheme.typography.bodyMedium
                 )
             },
@@ -423,13 +445,13 @@ fun TransactionDetailScreenContent(
                             strokeWidth = 2.dp
                         )
                     } else {
-                        Text("Xác nhận xóa")
+                        Text(stringResource(R.string.action_confirm))
                     }
                 }
             },
             dismissButton = {
                 TextButton(onClick = onDismissDeleteDialog) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -480,6 +502,7 @@ private fun TransactionDetailScreenPreview() {
             transaction = TransactionDetailUiModel(
                 id = 1L,
                 amountFormatted = "-50.000 ₫",
+                rawAmountFormatted = "50.000 ₫",
                 isExpense = true,
                 categoryName = "Ăn uống",
                 categoryIcon = Icons.Default.Fastfood,

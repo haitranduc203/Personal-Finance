@@ -5,13 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.fintrack.app.data.local.model.TransactionWithCategory
 import com.fintrack.app.data.repository.TransactionRepository
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+sealed interface DetailUiEvent {
+    data object NavigateBack : DetailUiEvent
+}
 
 /**
  * UI State for Transaction Detail Screen.
@@ -21,7 +27,6 @@ data class TransactionDetailUiState(
     val isLoading: Boolean = false,
     val showDeleteConfirmDialog: Boolean = false,
     val isDeleting: Boolean = false,
-    val isDeleted: Boolean = false,
     val errorMessage: String? = null
 )
 
@@ -35,10 +40,9 @@ class TransactionDetailViewModel(
     private val _uiState = MutableStateFlow(TransactionDetailUiState())
     val uiState: StateFlow<TransactionDetailUiState> = _uiState.asStateFlow()
 
-    /**
-     * Tracks the current load Job so it can be cancelled if [loadTransaction]
-     * is called again before the previous one completes, preventing duplicate collectors.
-     */
+    private val _eventChannel = Channel<DetailUiEvent>(Channel.BUFFERED)
+    val events = _eventChannel.receiveAsFlow()
+
     private var loadJob: Job? = null
 
     fun loadTransaction(id: Long) {
@@ -54,7 +58,7 @@ class TransactionDetailViewModel(
                             errorMessage = null
                         )
                     }
-                } else if (!_uiState.value.isDeleting && !_uiState.value.isDeleted) {
+                } else if (!_uiState.value.isDeleting) {
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -80,7 +84,8 @@ class TransactionDetailViewModel(
         viewModelScope.launch {
             try {
                 transactionRepository.deleteTransaction(currentTx)
-                _uiState.update { it.copy(isDeleting = false, isDeleted = true) }
+                _uiState.update { it.copy(isDeleting = false) }
+                _eventChannel.send(DetailUiEvent.NavigateBack)
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(

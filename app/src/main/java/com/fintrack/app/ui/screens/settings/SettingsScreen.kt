@@ -60,11 +60,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.R
 import com.fintrack.app.data.local.entity.CategoryEntity
 import com.fintrack.app.data.local.model.CategoryType
 import com.fintrack.app.data.local.preferences.CurrencyConfig
@@ -93,6 +95,11 @@ fun SettingsScreen(
         }
     }
 
+    val categoryCountString = stringResource(
+        R.string.settings_category_count,
+        if (uiState.categories.isNotEmpty()) uiState.categories.size else 12
+    )
+
     Box(modifier = modifier.fillMaxSize()) {
         SettingsScreenContent(
             isDarkTheme = uiState.isDarkTheme,
@@ -102,7 +109,7 @@ fun SettingsScreen(
             isDailyReminderEnabled = uiState.isDailyReminderEnabled,
             onToggleDailyReminder = { viewModel.toggleDailyReminder(it) },
             reminderTime = uiState.reminderTimeFormatted,
-            categoryCountText = if (uiState.categories.isNotEmpty()) "${uiState.categories.size} danh mục" else "12 danh mục",
+            categoryCountText = categoryCountString,
             onReminderTimeClick = {
                 val currentHour = uiState.userPreferences.reminderHour
                 val currentMinute = uiState.userPreferences.reminderMinute
@@ -151,16 +158,16 @@ fun SettingsScreen(
     if (uiState.showResetOnboardingDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissResetOnboardingDialog() },
-            title = { Text("Đặt lại Onboarding?") },
-            text = { Text("Màn hình hướng dẫn giới thiệu sẽ xuất hiện lại khi mở ứng dụng.") },
+            title = { Text(stringResource(R.string.settings_reset_onboarding_title)) },
+            text = { Text(stringResource(R.string.settings_reset_onboarding_desc)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.confirmResetOnboarding() }) {
-                    Text("Đồng ý")
+                    Text(stringResource(R.string.action_confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissResetOnboardingDialog() }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -170,16 +177,16 @@ fun SettingsScreen(
     if (uiState.showClearDataDialog) {
         AlertDialog(
             onDismissRequest = { viewModel.dismissClearDataDialog() },
-            title = { Text("Xóa toàn bộ dữ liệu?", color = MaterialTheme.colorScheme.error) },
-            text = { Text("Toàn bộ lịch sử giao dịch và cài đặt sẽ được đặt lại về mặc định. Hành động này không thể hoàn tác.") },
+            title = { Text(stringResource(R.string.settings_clear_data_title), color = MaterialTheme.colorScheme.error) },
+            text = { Text(stringResource(R.string.settings_clear_data_desc)) },
             confirmButton = {
                 TextButton(onClick = { viewModel.confirmClearData() }) {
-                    Text("Xóa hết", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
+                    Text(stringResource(R.string.action_delete_all), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { viewModel.dismissClearDataDialog() }) {
-                    Text("Hủy")
+                    Text(stringResource(R.string.action_cancel))
                 }
             }
         )
@@ -210,7 +217,7 @@ fun CategoryManagementDialog(
                     tint = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = "Danh mục hệ thống (${categories.size})",
+                    text = "${stringResource(R.string.settings_category_dialog_title)} (${categories.size})",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -252,7 +259,7 @@ fun CategoryManagementDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Đóng")
+                Text(stringResource(R.string.action_close))
             }
         }
     )
@@ -329,7 +336,7 @@ fun CurrencySelectionDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text("Chọn đơn vị tiền tệ", fontWeight = FontWeight.Bold)
+            Text(stringResource(R.string.settings_currency_dialog_title), fontWeight = FontWeight.Bold)
         },
         text = {
             Column(modifier = Modifier.selectableGroup()) {
@@ -364,7 +371,7 @@ fun CurrencySelectionDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("Đóng")
+                Text(stringResource(R.string.action_close))
             }
         }
     )
@@ -405,12 +412,12 @@ fun SettingsScreenContent(
         ) {
             Column {
                 Text(
-                    text = "Tùy chỉnh hệ thống",
+                    text = stringResource(R.string.settings_subtitle),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Cài đặt & Bảo mật",
+                    text = stringResource(R.string.settings_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -432,7 +439,7 @@ fun SettingsScreenContent(
                     ) {
                         Icon(
                             Icons.Default.Lock,
-                            contentDescription = "Bảo mật",
+                            contentDescription = stringResource(R.string.splash_security_badge),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(14.dp)
                         )
@@ -450,7 +457,7 @@ fun SettingsScreenContent(
                 ) {
                     Icon(
                         Icons.Default.Notifications,
-                        contentDescription = "Thử thông báo",
+                        contentDescription = stringResource(R.string.notif_title),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -468,13 +475,13 @@ fun SettingsScreenContent(
                 LocalVaultBanner()
             }
 
-            // GIAO DIỆN & HIỂN THỊ
+            // GIAO DIỆN & TIỀN TỆ
             item {
-                SettingsSection(title = "GIAO DIỆN & HIỂN THỊ") {
+                SettingsSection(title = stringResource(R.string.settings_section_interface)) {
                     SettingsItem(
                         icon = Icons.Default.DarkMode,
-                        title = "Giao diện tối (Dark Theme)",
-                        subtitle = "Chuyển đổi tông màu tối để bảo vệ mắt",
+                        title = stringResource(R.string.settings_dark_theme),
+                        subtitle = stringResource(R.string.settings_dark_theme_desc),
                         trailingContent = {
                             Switch(
                                 checked = isDarkTheme,
@@ -492,7 +499,7 @@ fun SettingsScreenContent(
                     )
                     SettingsItem(
                         icon = Icons.Default.Paid,
-                        title = "Đơn vị tiền tệ",
+                        title = stringResource(R.string.settings_currency),
                         subtitle = null,
                         trailingContent = {
                             Row(
@@ -506,7 +513,7 @@ fun SettingsScreenContent(
                                 )
                                 Icon(
                                     imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = "Chọn đơn vị",
+                                    contentDescription = stringResource(R.string.settings_currency),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -519,11 +526,11 @@ fun SettingsScreenContent(
 
             // THÔNG BÁO
             item {
-                SettingsSection(title = "THÔNG BÁO") {
+                SettingsSection(title = stringResource(R.string.settings_section_notification)) {
                     SettingsItem(
                         icon = Icons.Default.Notifications,
-                        title = "Nhắc nhở ghi sổ hàng ngày",
-                        subtitle = "Nhận thông báo nhắc ghi chép chi tiêu",
+                        title = stringResource(R.string.settings_daily_reminder),
+                        subtitle = stringResource(R.string.settings_daily_reminder_desc),
                         trailingContent = {
                             Switch(
                                 checked = isDailyReminderEnabled,
@@ -542,7 +549,7 @@ fun SettingsScreenContent(
                         )
                         SettingsItem(
                             icon = Icons.Default.AccessTime,
-                            title = "Thời gian nhắc nhở",
+                            title = stringResource(R.string.settings_reminder_time),
                             subtitle = null,
                             trailingContent = {
                                 Row(
@@ -556,7 +563,7 @@ fun SettingsScreenContent(
                                     )
                                     Icon(
                                         imageVector = Icons.Default.ChevronRight,
-                                        contentDescription = "Chọn giờ",
+                                        contentDescription = stringResource(R.string.settings_reminder_time),
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -570,10 +577,10 @@ fun SettingsScreenContent(
 
             // QUẢN LÝ DỮ LIỆU
             item {
-                SettingsSection(title = "QUẢN LÝ DỮ LIỆU") {
+                SettingsSection(title = stringResource(R.string.settings_section_data)) {
                     SettingsItem(
                         icon = Icons.Default.Category,
-                        title = "Quản lý danh mục",
+                        title = stringResource(R.string.settings_category_management),
                         subtitle = null,
                         trailingContent = {
                             Row(
@@ -587,7 +594,7 @@ fun SettingsScreenContent(
                                 )
                                 Icon(
                                     imageVector = Icons.Default.ChevronRight,
-                                    contentDescription = "Xem danh mục",
+                                    contentDescription = stringResource(R.string.settings_category_management),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -601,12 +608,12 @@ fun SettingsScreenContent(
                     )
                     SettingsItem(
                         icon = Icons.Default.RestartAlt,
-                        title = "Đặt lại Onboarding",
+                        title = stringResource(R.string.settings_reset_onboarding),
                         subtitle = null,
                         trailingContent = {
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
-                                contentDescription = "Đặt lại Onboarding",
+                                contentDescription = stringResource(R.string.settings_reset_onboarding),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -620,7 +627,7 @@ fun SettingsScreenContent(
                     SettingsItem(
                         icon = Icons.Default.DeleteForever,
                         iconTint = MaterialTheme.colorScheme.error,
-                        title = "Xóa toàn bộ dữ liệu",
+                        title = stringResource(R.string.settings_clear_data),
                         titleColor = MaterialTheme.colorScheme.error,
                         subtitle = null,
                         trailingContent = null,
@@ -631,14 +638,14 @@ fun SettingsScreenContent(
 
             // THÔNG TIN ỨNG DỤNG
             item {
-                SettingsSection(title = "THÔNG TIN ỨNG DỤNG") {
+                SettingsSection(title = stringResource(R.string.settings_section_about)) {
                     SettingsItem(
                         icon = Icons.Default.Info,
-                        title = "Phiên bản",
+                        title = stringResource(R.string.settings_version_title),
                         subtitle = null,
                         trailingContent = {
                             Text(
-                                text = "1.0.0 (Build 2026)",
+                                text = stringResource(R.string.settings_version_value),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -679,7 +686,7 @@ fun LocalVaultBanner(modifier: Modifier = Modifier) {
             ) {
                 Icon(
                     imageVector = Icons.Default.Lock,
-                    contentDescription = "Bảo mật",
+                    contentDescription = stringResource(R.string.splash_security_badge),
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
@@ -785,10 +792,6 @@ fun SettingsItem(
         trailingContent?.invoke()
     }
 }
-
-// ----------------------------------------------------
-// Compose Previews
-// ----------------------------------------------------
 
 @PreviewLightDark
 @Composable

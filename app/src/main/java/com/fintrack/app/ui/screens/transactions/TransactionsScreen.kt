@@ -24,8 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.automirrored.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.ReceiptLong
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -41,47 +41,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.fintrack.app.data.local.model.TransactionType
-import com.fintrack.app.data.local.model.TransactionWithCategory
+import com.fintrack.app.R
 import com.fintrack.app.ui.theme.FinTrackTheme
 import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
 import com.fintrack.app.ui.util.CategoryIconHelper
+import com.fintrack.app.ui.util.CurrencyFormatter
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
-import java.text.DecimalFormat
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-
-data class TransactionItemUi(
-    val id: Long,
-    val title: String,
-    val categoryName: String,
-    val categoryIcon: ImageVector,
-    val categoryColor: Color,
-    val amountFormatted: String,
-    val rawAmount: Long,
-    val isExpense: Boolean,
-    val timeFormatted: String,
-    val date: LocalDate
-)
-
-data class TransactionGroupUi(
-    val dateHeader: String,
-    val dailyNetFormatted: String,
-    val transactions: List<TransactionItemUi>
-)
 
 /**
  * Stateful entry composable for Transactions Screen.
@@ -93,11 +69,20 @@ fun TransactionsScreen(
     modifier: Modifier = Modifier,
     viewModel: TransactionsViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    val decimalFormat = DecimalFormat("#,###")
-    val totalIncomeFormatted = "+${decimalFormat.format(uiState.totalIncome)} ₫"
-    val totalExpenseFormatted = "-${decimalFormat.format(uiState.totalExpense)} ₫"
+    val totalIncomeFormatted = CurrencyFormatter.format(
+        amount = uiState.totalIncome,
+        currency = uiState.currency,
+        withSign = true,
+        isIncome = true
+    )
+    val totalExpenseFormatted = CurrencyFormatter.format(
+        amount = uiState.totalExpense,
+        currency = uiState.currency,
+        withSign = true,
+        isExpense = true
+    )
 
     TransactionsScreenContent(
         searchQuery = uiState.searchQuery,
@@ -143,7 +128,7 @@ fun TransactionsScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Compact Header — Matches Home Screen Design
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,12 +138,12 @@ fun TransactionsScreenContent(
         ) {
             Column {
                 Text(
-                    text = "Lịch sử thu chi",
+                    text = stringResource(R.string.transactions_title),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Sổ giao dịch",
+                    text = stringResource(R.string.transactions_subtitle),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
@@ -180,7 +165,7 @@ fun TransactionsScreenContent(
                     ) {
                         Icon(
                             Icons.Default.DateRange,
-                            contentDescription = "Chọn tháng",
+                            contentDescription = stringResource(R.string.transactions_filter_this_month),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(14.dp)
                         )
@@ -198,7 +183,7 @@ fun TransactionsScreenContent(
                 ) {
                     Icon(
                         Icons.Default.Notifications,
-                        contentDescription = "Thông báo",
+                        contentDescription = stringResource(R.string.notif_title),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -214,7 +199,7 @@ fun TransactionsScreenContent(
                 .padding(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Compact Search Bar
+            // Search Bar
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -231,7 +216,7 @@ fun TransactionsScreenContent(
                 ) {
                     Icon(
                         Icons.Default.Search,
-                        contentDescription = "Tìm kiếm",
+                        contentDescription = stringResource(R.string.transactions_search_hint),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
@@ -246,7 +231,7 @@ fun TransactionsScreenContent(
                         decorationBox = { innerTextField ->
                             if (searchQuery.isEmpty()) {
                                 Text(
-                                    text = "Tìm kiếm giao dịch...",
+                                    text = stringResource(R.string.transactions_search_hint),
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                                     maxLines = 1
@@ -262,7 +247,7 @@ fun TransactionsScreenContent(
                         ) {
                             Icon(
                                 Icons.Default.Clear,
-                                contentDescription = "Xóa tìm kiếm",
+                                contentDescription = stringResource(R.string.transactions_search_clear),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -277,12 +262,18 @@ fun TransactionsScreenContent(
             ) {
                 items(filters) { filter ->
                     val isSelected = selectedFilter == filter
+                    val chipTitle = when (filter) {
+                        TransactionFilter.ALL -> stringResource(R.string.transactions_filter_all)
+                        TransactionFilter.EXPENSE -> stringResource(R.string.transactions_filter_expense)
+                        TransactionFilter.INCOME -> stringResource(R.string.transactions_filter_income)
+                        TransactionFilter.THIS_MONTH -> stringResource(R.string.transactions_filter_this_month)
+                    }
                     FilterChip(
                         selected = isSelected,
                         onClick = { onFilterSelected(filter) },
                         label = {
                             Text(
-                                text = filter.title,
+                                text = chipTitle,
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
@@ -309,7 +300,7 @@ fun TransactionsScreenContent(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Tổng $totalCount giao dịch",
+                    text = stringResource(R.string.transactions_total_count, totalCount),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -356,8 +347,8 @@ fun TransactionsScreenContent(
                     ) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Icon(
-                                imageVector = Icons.Default.ReceiptLong,
-                                contentDescription = "Trống",
+                                imageVector = Icons.AutoMirrored.Filled.ReceiptLong,
+                                contentDescription = stringResource(R.string.transactions_empty_title),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(36.dp)
                             )
@@ -365,14 +356,22 @@ fun TransactionsScreenContent(
                     }
 
                     Text(
-                        text = if (searchQuery.isNotEmpty()) "Không tìm thấy giao dịch" else "Chưa có giao dịch nào",
+                        text = if (searchQuery.isNotEmpty()) {
+                            stringResource(R.string.transactions_empty_search)
+                        } else {
+                            stringResource(R.string.transactions_empty_title)
+                        },
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Text(
-                        text = if (searchQuery.isNotEmpty()) "Hãy thử từ khóa khác hoặc xóa bộ lọc" else "Bắt đầu ghi chép khoản thu hoặc chi tiêu đầu tiên của bạn!",
+                        text = if (searchQuery.isNotEmpty()) {
+                            stringResource(R.string.transactions_empty_search_desc)
+                        } else {
+                            stringResource(R.string.transactions_empty_desc)
+                        },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -384,9 +383,13 @@ fun TransactionsScreenContent(
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Icon(Icons.Default.Add, contentDescription = "Thêm giao dịch", modifier = Modifier.size(18.dp))
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = stringResource(R.string.transactions_add_now),
+                                modifier = Modifier.size(18.dp)
+                            )
                             Spacer(modifier = Modifier.width(6.dp))
-                            Text("Thêm giao dịch ngay")
+                            Text(stringResource(R.string.transactions_add_now))
                         }
                     }
                 }
@@ -444,6 +447,13 @@ fun TransactionListItemCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val categoryIcon = remember(transaction.categoryIconKey) {
+        CategoryIconHelper.getIconByName(transaction.categoryIconKey)
+    }
+    val categoryColor = remember(transaction.categoryColorKey) {
+        CategoryIconHelper.parseColor(transaction.categoryColorKey)
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -469,14 +479,14 @@ fun TransactionListItemCard(
                 // Category Icon
                 Surface(
                     shape = CircleShape,
-                    color = transaction.categoryColor.copy(alpha = 0.15f),
+                    color = categoryColor.copy(alpha = 0.15f),
                     modifier = Modifier.size(44.dp)
                 ) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Icon(
-                            imageVector = transaction.categoryIcon,
+                            imageVector = categoryIcon,
                             contentDescription = transaction.categoryName,
-                            tint = transaction.categoryColor,
+                            tint = categoryColor,
                             modifier = Modifier.size(22.dp)
                         )
                     }
@@ -525,29 +535,10 @@ private fun TransactionsScreenPreview() {
             onSearchQueryChange = {},
             selectedFilter = TransactionFilter.ALL,
             onFilterSelected = {},
-            transactionGroups = listOf(
-                TransactionGroupUi(
-                    dateHeader = "Hôm nay, 15 Th08",
-                    dailyNetFormatted = "-120.000 ₫",
-                    transactions = listOf(
-                        TransactionItemUi(
-                            id = 1L,
-                            title = "Ăn trưa bún bò",
-                            categoryName = "Ăn uống",
-                            categoryIcon = Icons.Default.ReceiptLong,
-                            categoryColor = Color(0xFFFFA000),
-                            amountFormatted = "-50.000 ₫",
-                            rawAmount = 50000L,
-                            isExpense = true,
-                            timeFormatted = "12:30",
-                            date = LocalDate.now()
-                        )
-                    )
-                )
-            ),
-            totalCount = 1,
+            transactionGroups = emptyList(),
+            totalCount = 0,
             totalIncomeFormatted = "+0 ₫",
-            totalExpenseFormatted = "-50.000 ₫",
+            totalExpenseFormatted = "-0 ₫",
             currentMonthLabel = "Tháng 8, 2026",
             isLoading = false,
             onTransactionClick = {},

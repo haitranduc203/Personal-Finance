@@ -30,17 +30,20 @@ object AppViewModelProvider {
         }
         initializer {
             HomeViewModel(
-                transactionRepository = finTrackApplication().transactionRepository
+                transactionRepository = finTrackApplication().transactionRepository,
+                preferencesRepository = finTrackApplication().preferencesRepository
             )
         }
         initializer {
             TransactionsViewModel(
-                transactionRepository = finTrackApplication().transactionRepository
+                transactionRepository = finTrackApplication().transactionRepository,
+                preferencesRepository = finTrackApplication().preferencesRepository
             )
         }
         initializer {
             StatisticsViewModel(
-                transactionRepository = finTrackApplication().transactionRepository
+                transactionRepository = finTrackApplication().transactionRepository,
+                preferencesRepository = finTrackApplication().preferencesRepository
             )
         }
         initializer {

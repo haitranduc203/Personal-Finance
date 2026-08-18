@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -49,20 +48,22 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.fintrack.app.R
 import com.fintrack.app.data.local.entity.CategoryEntity
 import com.fintrack.app.data.local.model.CategoryType
 import com.fintrack.app.data.local.model.TransactionType
@@ -71,7 +72,6 @@ import com.fintrack.app.ui.theme.SemanticGreen
 import com.fintrack.app.ui.theme.SemanticRed
 import com.fintrack.app.ui.util.CategoryIconHelper
 import com.fintrack.app.ui.viewmodel.AppViewModelProvider
-import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 /**
@@ -84,16 +84,19 @@ fun AddEditTransactionScreen(
     modifier: Modifier = Modifier,
     viewModel: AddEditTransactionViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     LaunchedEffect(transactionId) {
         viewModel.initForTransaction(transactionId)
     }
 
-    LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) {
-            onNavigateBack()
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { event ->
+            when (event) {
+                is AddEditUiEvent.NavigateBack -> onNavigateBack()
+                is AddEditUiEvent.ShowError -> { /* handle error */ }
+            }
         }
     }
 
@@ -190,31 +193,30 @@ fun AddEditTransactionScreenContent(
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
-        // Compact Header
+        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .statusBarsPadding()
                 .padding(start = 8.dp, top = 6.dp, end = 16.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onCancelClick) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                    contentDescription = "Quay lại",
+                    contentDescription = stringResource(R.string.action_back),
                     tint = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.width(4.dp))
             Column {
                 Text(
-                    text = if (isEditMode) "Cập nhật giao dịch" else "Thêm giao dịch mới",
+                    text = if (isEditMode) stringResource(R.string.edit_title) else stringResource(R.string.add_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary
                 )
                 Text(
-                    text = if (isEditMode) "Sửa thông tin thu chi" else "Ghi chép dòng tiền của bạn",
+                    text = if (isEditMode) stringResource(R.string.edit_subtitle) else stringResource(R.string.add_subtitle),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -272,7 +274,11 @@ fun AddEditTransactionScreenContent(
                             )
                         ) {
                             Text(
-                                text = if (type == TransactionType.EXPENSE) "Khoản chi (-)" else "Khoản thu (+)",
+                                text = if (type == TransactionType.EXPENSE) {
+                                    stringResource(R.string.add_type_expense)
+                                } else {
+                                    stringResource(R.string.add_type_income)
+                                },
                                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                             )
                         }
@@ -294,7 +300,7 @@ fun AddEditTransactionScreenContent(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = "SỐ TIỀN GIAO DỊCH",
+                            text = stringResource(R.string.add_amount_label),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
@@ -320,14 +326,6 @@ fun AddEditTransactionScreenContent(
                                 textAlign = TextAlign.Center,
                                 color = if (selectedType == TransactionType.EXPENSE) SemanticRed else SemanticGreen
                             ),
-                            suffix = {
-                                Text(
-                                    text = "₫",
-                                    style = MaterialTheme.typography.titleLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            },
                             isError = amountError != null,
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedBorderColor = if (selectedType == TransactionType.EXPENSE) SemanticRed else SemanticGreen,
@@ -339,7 +337,7 @@ fun AddEditTransactionScreenContent(
 
                         if (amountError != null) {
                             Text(
-                                text = amountError,
+                                text = stringResource(R.string.add_error_amount),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = SemanticRed,
                                 modifier = Modifier
@@ -370,7 +368,7 @@ fun AddEditTransactionScreenContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = "DANH MỤC",
+                                text = stringResource(R.string.add_category_label),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 letterSpacing = 1.sp
@@ -387,7 +385,7 @@ fun AddEditTransactionScreenContent(
 
                         if (categories.isEmpty()) {
                             Text(
-                                text = "Đang tải danh mục...",
+                                text = stringResource(R.string.add_category_loading),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -438,7 +436,7 @@ fun AddEditTransactionScreenContent(
 
                         if (categoryError != null) {
                             Text(
-                                text = categoryError,
+                                text = stringResource(R.string.add_error_category),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = SemanticRed,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -462,7 +460,7 @@ fun AddEditTransactionScreenContent(
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Text(
-                            text = "THỜI GIAN",
+                            text = stringResource(R.string.add_time_label),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
@@ -488,7 +486,7 @@ fun AddEditTransactionScreenContent(
                                 ) {
                                     Icon(
                                         Icons.Default.CalendarToday,
-                                        contentDescription = "Chọn ngày",
+                                        contentDescription = stringResource(R.string.detail_date),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -516,7 +514,7 @@ fun AddEditTransactionScreenContent(
                                 ) {
                                     Icon(
                                         Icons.Default.AccessTime,
-                                        contentDescription = "Chọn giờ",
+                                        contentDescription = stringResource(R.string.detail_time),
                                         tint = MaterialTheme.colorScheme.primary,
                                         modifier = Modifier.size(18.dp)
                                     )
@@ -546,7 +544,7 @@ fun AddEditTransactionScreenContent(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Text(
-                            text = "GHI CHÚ (TÙY CHỌN)",
+                            text = stringResource(R.string.add_note_label),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             letterSpacing = 1.sp
@@ -555,11 +553,11 @@ fun AddEditTransactionScreenContent(
                         OutlinedTextField(
                             value = noteText,
                             onValueChange = onNoteChange,
-                            placeholder = { Text("Ví dụ: Ăn trưa phở bò với bạn bè...") },
+                            placeholder = { Text(stringResource(R.string.add_note_hint)) },
                             leadingIcon = {
                                 Icon(
                                     Icons.Default.Description,
-                                    contentDescription = "Ghi chú",
+                                    contentDescription = stringResource(R.string.detail_note),
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             },
@@ -586,7 +584,11 @@ fun AddEditTransactionScreenContent(
                             .weight(1f)
                             .height(50.dp)
                     ) {
-                        Text("Hủy bỏ")
+                        Text(
+                            text = stringResource(R.string.action_cancel),
+                            maxLines = 1,
+                            softWrap = false
+                        )
                     }
 
                     Button(
@@ -596,8 +598,9 @@ fun AddEditTransactionScreenContent(
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary
                         ),
+                        contentPadding = PaddingValues(horizontal = 12.dp),
                         modifier = Modifier
-                            .weight(1.5f)
+                            .weight(2.2f)
                             .height(50.dp)
                     ) {
                         if (isSubmitting) {
@@ -607,11 +610,13 @@ fun AddEditTransactionScreenContent(
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Icon(Icons.Default.Check, contentDescription = "Lưu", modifier = Modifier.size(18.dp))
+                            Icon(Icons.Default.Check, contentDescription = stringResource(R.string.action_save), modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (isEditMode) "Cập nhật" else "Lưu giao dịch",
-                                fontWeight = FontWeight.Bold
+                                text = if (isEditMode) stringResource(R.string.add_update) else stringResource(R.string.add_save),
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                softWrap = false
                             )
                         }
                     }
