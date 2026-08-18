@@ -47,6 +47,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.fintrack.app.R
@@ -254,21 +255,28 @@ fun KpiCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 10.dp),
+            modifier = Modifier.padding(horizontal = 6.dp, vertical = 10.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.labelSmall,
+                style = MaterialTheme.typography.labelSmall.copy(
+                    fontSize = 10.sp,
+                    lineHeight = 12.sp,
+                    letterSpacing = (-0.2).sp
+                ),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1
+                maxLines = 1,
+                softWrap = false
             )
             Text(
                 text = amount,
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.labelLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
                 color = color,
-                maxLines = 1
+                maxLines = 1,
+                softWrap = false
             )
         }
     }

@@ -110,7 +110,7 @@
     <string name="stats_period_year">Năm</string>
     <string name="stats_total_expense">Tổng chi</string>
     <string name="stats_total_income">Tổng thu</string>
-    <string name="stats_daily_avg">Trung bình/ngày</string>
+    <string name="stats_daily_avg">Trung bình / ngày</string>
     <string name="stats_category_breakdown">Cơ cấu chi tiêu theo danh mục</string>
     <string name="stats_category_empty">Chưa có dữ liệu chi tiêu trong khoảng thời gian này.</string>
     <string name="stats_trend_daily">So sánh Thu - Chi theo ngày</string>
