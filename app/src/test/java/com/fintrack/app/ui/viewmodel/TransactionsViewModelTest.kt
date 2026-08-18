@@ -19,12 +19,17 @@ class TransactionsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var transactionRepository: FakeTransactionRepository
+    private lateinit var preferencesRepository: FakePreferencesRepository
     private lateinit var viewModel: TransactionsViewModel
 
     @Before
     fun setup() {
         transactionRepository = FakeTransactionRepository()
-        viewModel = TransactionsViewModel(transactionRepository)
+        preferencesRepository = FakePreferencesRepository()
+        viewModel = TransactionsViewModel(
+            transactionRepository = transactionRepository,
+            preferencesRepository = preferencesRepository
+        )
     }
 
     @Test

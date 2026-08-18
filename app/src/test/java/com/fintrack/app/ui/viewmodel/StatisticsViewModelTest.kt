@@ -5,7 +5,6 @@ import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.ui.screens.statistics.StatisticsViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -22,12 +21,17 @@ class StatisticsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var fakeTransactionRepository: FakeTransactionRepository
+    private lateinit var fakePreferencesRepository: FakePreferencesRepository
     private lateinit var viewModel: StatisticsViewModel
 
     @Before
     fun setUp() {
         fakeTransactionRepository = FakeTransactionRepository()
-        viewModel = StatisticsViewModel(fakeTransactionRepository)
+        fakePreferencesRepository = FakePreferencesRepository()
+        viewModel = StatisticsViewModel(
+            transactionRepository = fakeTransactionRepository,
+            preferencesRepository = fakePreferencesRepository
+        )
     }
 
     @Test
@@ -37,6 +41,7 @@ class StatisticsViewModelTest {
         assertEquals(0L, state.totalExpense)
         assertEquals(0L, state.dailyAverage)
         assertTrue(state.categoryStats.isEmpty())
+        assertEquals("-0 ₫", state.totalExpenseFormatted)
     }
 
     @Test

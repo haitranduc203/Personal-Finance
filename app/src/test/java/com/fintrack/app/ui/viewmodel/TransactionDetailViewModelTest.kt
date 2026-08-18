@@ -2,9 +2,12 @@ package com.fintrack.app.ui.viewmodel
 
 import com.fintrack.app.data.local.entity.TransactionEntity
 import com.fintrack.app.data.local.model.TransactionType
+import com.fintrack.app.ui.screens.detail.DetailUiEvent
 import com.fintrack.app.ui.screens.detail.TransactionDetailViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -72,7 +75,12 @@ class TransactionDetailViewModelTest {
     }
 
     @Test
-    fun confirmDelete_deletesTransactionFromRepository_andMarksDeleted() = runTest {
+    fun confirmDelete_deletesTransactionFromRepository_andSendsNavigateBackEvent() = runTest {
+        val receivedEvents = mutableListOf<DetailUiEvent>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { receivedEvents.add(it) }
+        }
+
         val id = transactionRepository.addTransaction(
             TransactionEntity(
                 id = 0L,
@@ -87,10 +95,11 @@ class TransactionDetailViewModelTest {
         viewModel.loadTransaction(id)
         viewModel.confirmDelete()
 
-        val state = viewModel.uiState.value
-        assertTrue(state.isDeleted)
+        assertEquals(listOf(DetailUiEvent.NavigateBack), receivedEvents)
 
         val remaining = transactionRepository.observeTransactions().first()
         assertTrue(remaining.isEmpty())
+
+        job.cancel()
     }
 }

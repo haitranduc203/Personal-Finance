@@ -2,9 +2,12 @@ package com.fintrack.app.ui.viewmodel
 
 import com.fintrack.app.data.local.entity.TransactionEntity
 import com.fintrack.app.data.local.model.TransactionType
+import com.fintrack.app.ui.screens.add_edit.AddEditUiEvent
 import com.fintrack.app.ui.screens.add_edit.AddEditTransactionViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -49,6 +52,7 @@ class AddEditTransactionViewModelTest {
     @Test
     fun onTypeChange_switchesToIncome_andUpdatesCategories() = runTest {
         viewModel.onTypeChange(TransactionType.INCOME)
+        testScheduler.advanceUntilIdle()
         val state = viewModel.uiState.value
 
         assertEquals(TransactionType.INCOME, state.type)
@@ -68,11 +72,15 @@ class AddEditTransactionViewModelTest {
 
         val state = viewModel.uiState.value
         assertNotNull(state.amountError)
-        assertFalse(state.isSaved)
     }
 
     @Test
-    fun saveTransaction_withValidData_insertsIntoRepository() = runTest {
+    fun saveTransaction_withValidData_insertsIntoRepository_andSendsNavigateBackEvent() = runTest {
+        val receivedEvents = mutableListOf<AddEditUiEvent>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { receivedEvents.add(it) }
+        }
+
         viewModel.onAmountChange("150000")
         viewModel.onNoteChange("Ăn tối nhà hàng")
         viewModel.saveTransaction()
@@ -80,16 +88,23 @@ class AddEditTransactionViewModelTest {
         val state = viewModel.uiState.value
         assertNull(state.amountError)
         assertNull(state.categoryError)
-        assertTrue(state.isSaved)
+        assertEquals(listOf(AddEditUiEvent.NavigateBack), receivedEvents)
 
         val allTx = transactionRepository.observeTransactions().first()
         assertEquals(1, allTx.size)
         assertEquals(150000L, allTx[0].transaction.amount)
         assertEquals("Ăn tối nhà hàng", allTx[0].transaction.note)
+
+        job.cancel()
     }
 
     @Test
     fun initForTransaction_loadsExistingTransactionForEdit() = runTest {
+        val receivedEvents = mutableListOf<AddEditUiEvent>()
+        val job = backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
+            viewModel.events.collect { receivedEvents.add(it) }
+        }
+
         val epochMillis = LocalDateTime.of(2026, 8, 15, 10, 0)
             .atZone(ZoneId.systemDefault())
             .toInstant()
@@ -119,9 +134,11 @@ class AddEditTransactionViewModelTest {
         viewModel.onAmountChange("300000")
         viewModel.saveTransaction()
 
-        assertTrue(viewModel.uiState.value.isSaved)
+        assertEquals(listOf(AddEditUiEvent.NavigateBack), receivedEvents)
         val updated = transactionRepository.getTransactionById(existingId)
         assertNotNull(updated)
         assertEquals(300000L, updated!!.transaction.amount)
+
+        job.cancel()
     }
 }

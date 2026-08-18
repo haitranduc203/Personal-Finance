@@ -146,6 +146,12 @@ class FakeTransactionDao : TransactionDao {
     }
 
     override suspend fun count(): Int = transactions.size
+
+    override suspend fun deleteAll(): Int {
+        val count = transactions.size
+        transactions.clear()
+        return count
+    }
 }
 
 class TransactionRepositoryTest {

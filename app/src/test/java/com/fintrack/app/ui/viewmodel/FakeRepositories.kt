@@ -6,7 +6,11 @@ import com.fintrack.app.data.local.model.CategoryExpense
 import com.fintrack.app.data.local.model.CategoryType
 import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.data.local.model.TransactionWithCategory
+import com.fintrack.app.data.local.preferences.AppThemeConfig
+import com.fintrack.app.data.local.preferences.CurrencyConfig
+import com.fintrack.app.data.local.preferences.UserPreferences
 import com.fintrack.app.data.repository.CategoryRepository
+import com.fintrack.app.data.repository.PreferencesRepository
 import com.fintrack.app.data.repository.TransactionRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -183,20 +187,24 @@ class FakeTransactionRepository : TransactionRepository {
     override suspend fun deleteTransactionById(id: Long) {
         _transactions.value = _transactions.value.filterNot { it.id == id }
     }
+
+    override suspend fun deleteAllTransactions() {
+        _transactions.value = emptyList()
+    }
 }
 
 class FakePreferencesRepository(
-    initialPreferences: com.fintrack.app.data.local.preferences.UserPreferences = com.fintrack.app.data.local.preferences.UserPreferences()
-) : com.fintrack.app.data.repository.PreferencesRepository {
+    initialPreferences: UserPreferences = UserPreferences()
+) : PreferencesRepository {
 
     private val _prefs = MutableStateFlow(initialPreferences)
-    override val userPreferencesFlow: Flow<com.fintrack.app.data.local.preferences.UserPreferences> = _prefs.asStateFlow()
+    override val userPreferencesFlow: Flow<UserPreferences> = _prefs.asStateFlow()
 
-    override suspend fun setTheme(theme: com.fintrack.app.data.local.preferences.AppThemeConfig) {
+    override suspend fun setTheme(theme: AppThemeConfig) {
         _prefs.value = _prefs.value.copy(theme = theme)
     }
 
-    override suspend fun setCurrency(currency: com.fintrack.app.data.local.preferences.CurrencyConfig) {
+    override suspend fun setCurrency(currency: CurrencyConfig) {
         _prefs.value = _prefs.value.copy(currency = currency)
     }
 
@@ -217,7 +225,6 @@ class FakePreferencesRepository(
     }
 
     override suspend fun clearPreferences() {
-        _prefs.value = com.fintrack.app.data.local.preferences.UserPreferences()
+        _prefs.value = UserPreferences()
     }
 }
-

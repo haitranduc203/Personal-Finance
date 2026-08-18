@@ -19,12 +19,17 @@ class HomeViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     private lateinit var fakeTransactionRepository: FakeTransactionRepository
+    private lateinit var fakePreferencesRepository: FakePreferencesRepository
     private lateinit var viewModel: HomeViewModel
 
     @Before
     fun setUp() {
         fakeTransactionRepository = FakeTransactionRepository()
-        viewModel = HomeViewModel(fakeTransactionRepository)
+        fakePreferencesRepository = FakePreferencesRepository()
+        viewModel = HomeViewModel(
+            transactionRepository = fakeTransactionRepository,
+            preferencesRepository = fakePreferencesRepository
+        )
     }
 
     @Test
