@@ -28,3 +28,7 @@ phase-results/
 .stitch/
 architecture-diagrams/
 screenshots/
+docs/
+.vscode/
+
+
