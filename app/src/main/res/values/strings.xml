@@ -20,19 +20,10 @@
     <string name="nav_settings">Cài đặt</string>
     <string name="action_add_new_transaction">Thêm giao dịch mới</string>
 
-    <!-- Splash & Onboarding -->
+    <!-- Splash Screen -->
     <string name="splash_slogan">Quản lý tài chính cá nhân thông minh, bảo mật &amp; hiệu quả</string>
     <string name="splash_security_badge">100% OFFLINE • BẢO MẬT CỤC BỘ</string>
     <string name="splash_version">Phiên bản 1.0.0 (Build 2026)</string>
-    <string name="onboarding_skip">Bỏ qua</string>
-    <string name="onboarding_next">Tiếp theo</string>
-    <string name="onboarding_start">Bắt đầu ngay</string>
-    <string name="onboarding_title_1">Quản Lý Thu Chi Đơn Giản</string>
-    <string name="onboarding_desc_1">Ghi chép các khoản chi tiêu và thu nhập hàng ngày nhanh chóng chỉ trong vài giây.</string>
-    <string name="onboarding_title_2">Thống Kê Trực Quan</string>
-    <string name="onboarding_desc_2">Báo cáo chi tiết theo tuần, tháng, năm với biểu đồ phân tích cơ cấu chi tiêu thông minh.</string>
-    <string name="onboarding_title_3">Bảo Mật Tuyệt Đối</string>
-    <string name="onboarding_desc_3">Dữ liệu được lưu trữ an toàn 100% offline trên thiết bị của bạn, không gửi lên bất kỳ máy chủ nào.</string>
 
     <!-- Home Screen -->
     <string name="home_greeting">Xin chào 👋</string>
@@ -61,11 +52,22 @@
     <string name="transactions_empty_search_desc">Hãy thử từ khóa khác hoặc xóa bộ lọc</string>
     <string name="transactions_empty_title">Chưa có giao dịch nào</string>
     <string name="transactions_empty_desc">Bắt đầu ghi chép khoản thu hoặc chi tiêu đầu tiên của bạn!</string>
-    <string name="transactions_add_now">Thêm giao dịch ngay</string>
     <string name="transactions_filter_all">Tất cả</string>
     <string name="transactions_filter_expense">Khoản chi</string>
     <string name="transactions_filter_income">Khoản thu</string>
     <string name="transactions_filter_this_month">Tháng này</string>
+    <string name="transactions_filter_time_all">Tất cả</string>
+    <string name="transactions_filter_time_today">Hôm nay</string>
+    <string name="transactions_filter_time_week">Tuần này</string>
+    <string name="transactions_filter_time_month">Tháng này</string>
+    <string name="transactions_filter_time_year">Năm nay</string>
+    <string name="transactions_filter_time_custom">Tùy chọn...</string>
+    <string name="transactions_filter_custom_dialog_title">Lọc thời gian giao dịch</string>
+    <string name="transactions_filter_by_date">Chọn một ngày cụ thể</string>
+    <string name="transactions_filter_by_range">Chọn khoảng thời gian (Từ ngày - Đến ngày)</string>
+    <string name="transactions_filter_start_date">Từ ngày: %1$s</string>
+    <string name="transactions_filter_end_date">Đến ngày: %1$s</string>
+    <string name="transactions_filter_apply">Áp dụng</string>
     <string name="date_today_format">Hôm nay, %1$s</string>
     <string name="date_yesterday_format">Hôm qua, %1$s</string>
 
@@ -144,6 +146,17 @@
     <string name="settings_section_about">THÔNG TIN ỨNG DỤNG</string>
     <string name="settings_version_title">Phiên bản</string>
     <string name="settings_version_value">1.0.0 (Build 2026)</string>
+
+    <!-- Onboarding Screen -->
+    <string name="onboarding_skip">Bỏ qua</string>
+    <string name="onboarding_next">Tiếp tục</string>
+    <string name="onboarding_get_started">Bắt đầu ngay</string>
+    <string name="onboarding_slide1_title">Quản lý chi tiêu thông minh</string>
+    <string name="onboarding_slide1_desc">Ghi chép thu chi hàng ngày nhanh chóng, phân loại theo 12 danh mục trực quan và theo dõi dòng tiền mọi lúc mọi nơi.</string>
+    <string name="onboarding_slide2_title">Phân tích tài chính trực quan</string>
+    <string name="onboarding_slide2_desc">Báo cáo chi tiết theo tuần, tháng, năm. Cơ cấu chi tiêu bằng biểu đồ tròn và cột sinh động giúp bạn tối ưu ngân sách cá nhân.</string>
+    <string name="onboarding_slide3_title">Bảo mật &amp; Nhắc nhở hàng ngày</string>
+    <string name="onboarding_slide3_desc">Dữ liệu lưu trữ an toàn 100% offline trên thiết bị của bạn. Thông báo nhắc nhở ghi chép chi tiêu mỗi tối để xây dựng thói quen tài chính tốt.</string>
 
     <!-- Notification Helper -->
     <string name="notif_channel_name">Nhắc nhở ghi chép chi tiêu</string>

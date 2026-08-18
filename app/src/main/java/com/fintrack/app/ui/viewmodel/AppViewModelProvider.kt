@@ -8,6 +8,7 @@ import com.fintrack.app.FinTrackApplication
 import com.fintrack.app.ui.screens.add_edit.AddEditTransactionViewModel
 import com.fintrack.app.ui.screens.detail.TransactionDetailViewModel
 import com.fintrack.app.ui.screens.home.HomeViewModel
+import com.fintrack.app.ui.screens.onboarding.OnboardingViewModel
 import com.fintrack.app.ui.screens.settings.SettingsViewModel
 import com.fintrack.app.ui.screens.statistics.StatisticsViewModel
 import com.fintrack.app.ui.screens.transactions.TransactionsViewModel
@@ -43,6 +44,11 @@ object AppViewModelProvider {
         initializer {
             StatisticsViewModel(
                 transactionRepository = finTrackApplication().transactionRepository,
+                preferencesRepository = finTrackApplication().preferencesRepository
+            )
+        }
+        initializer {
+            OnboardingViewModel(
                 preferencesRepository = finTrackApplication().preferencesRepository
             )
         }

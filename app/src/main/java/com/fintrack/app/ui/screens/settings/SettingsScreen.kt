@@ -81,6 +81,7 @@ import com.fintrack.app.ui.viewmodel.AppViewModelProvider
  */
 @Composable
 fun SettingsScreen(
+    onNavigateToOnboarding: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = viewModel(factory = AppViewModelProvider.Factory)
 ) {
@@ -161,7 +162,12 @@ fun SettingsScreen(
             title = { Text(stringResource(R.string.settings_reset_onboarding_title)) },
             text = { Text(stringResource(R.string.settings_reset_onboarding_desc)) },
             confirmButton = {
-                TextButton(onClick = { viewModel.confirmResetOnboarding() }) {
+                TextButton(
+                    onClick = {
+                        viewModel.confirmResetOnboarding()
+                        onNavigateToOnboarding()
+                    }
+                ) {
                     Text(stringResource(R.string.action_confirm))
                 }
             },
