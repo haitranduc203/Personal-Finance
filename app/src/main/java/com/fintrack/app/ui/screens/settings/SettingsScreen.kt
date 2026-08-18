@@ -450,7 +450,7 @@ fun SettingsScreenContent(
                             modifier = Modifier.size(14.dp)
                         )
                         Text(
-                            text = "Bảo mật",
+                            text = stringResource(R.string.settings_tag_security),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Medium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -700,13 +700,13 @@ fun LocalVaultBanner(modifier: Modifier = Modifier) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = "Local-First Vault",
+                    text = stringResource(R.string.settings_vault_title),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Dữ liệu của bạn được lưu trữ an toàn 100% cục bộ trên thiết bị qua Room Database.",
+                    text = stringResource(R.string.settings_vault_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

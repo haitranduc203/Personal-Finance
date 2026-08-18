@@ -122,6 +122,9 @@
     <!-- Settings Screen -->
     <string name="settings_title">Cài đặt &amp; Bảo mật</string>
     <string name="settings_subtitle">Tùy chỉnh hệ thống</string>
+    <string name="settings_tag_security">Bảo mật</string>
+    <string name="settings_vault_title">Local-First Vault</string>
+    <string name="settings_vault_desc">Dữ liệu của bạn được lưu trữ an toàn 100% cục bộ trên thiết bị.</string>
     <string name="settings_section_interface">GIAO DIỆN &amp; TIỀN TỆ</string>
     <string name="settings_dark_theme">Giao diện tối (Dark Theme)</string>
     <string name="settings_dark_theme_desc">Chuyển đổi tông màu tối để bảo vệ mắt</string>
@@ -161,7 +164,7 @@
     <!-- Notification Helper -->
     <string name="notif_channel_name">Nhắc nhở ghi chép chi tiêu</string>
     <string name="notif_channel_desc">Thông báo nhắc người dùng ghi chép chi tiêu và thu nhập hàng ngày</string>
-    <string name="notif_title">Đừng quên ghi chép chi tiêu hôm nay! 📝</string>
+    <string name="notif_title">Đừng quên ghi chép chi tiêu hôm nay!</string>
     <string name="notif_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính chính xác nhé.</string>
     <string name="notif_big_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính và theo dõi ngân sách chính xác nhé.</string>
 </resources>
