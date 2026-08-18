@@ -3,111 +3,171 @@
 [![Android CI](https://img.shields.io/badge/Build-Passing-brightgreen?logo=android&logoColor=white)](https://github.com/haitranduc203/Personal-Finance)
 ![Kotlin](https://img.shields.io/badge/Kotlin-2.3.20-7F52FF?logo=kotlin&logoColor=white)
 ![Jetpack Compose](https://img.shields.io/badge/UI-Jetpack%20Compose-4285F4?logo=jetpackcompose&logoColor=white)
+![Material 3](https://img.shields.io/badge/Design-Material%203-7C4DFF?logo=materialdesign&logoColor=white)
 ![Room](https://img.shields.io/badge/Database-Room%202.6.1-orange?logo=sqlite&logoColor=white)
 ![DataStore](https://img.shields.io/badge/Storage-DataStore%201.1.3-blue)
 ![WorkManager](https://img.shields.io/badge/Background-WorkManager%202.10.0-green)
+![Unit Tests](https://img.shields.io/badge/Unit%20Tests-53%20Passed-brightgreen)
 ![Min SDK](https://img.shields.io/badge/minSdk-24-3DDC84?logo=android&logoColor=white)
 ![Target SDK](https://img.shields.io/badge/targetSdk-35-3DDC84?logo=android&logoColor=white)
 
-`FinTrack` là ứng dụng Android Native quản lý tài chính cá nhân được xây dựng theo kiến trúc **Local-First Vault** bảo mật tuyệt đối. Ứng dụng giúp người dùng ghi chép chi tiêu, theo dõi dòng tiền thu/chi tức thì, trực quan hóa dữ liệu qua biểu đồ tương tác và duy trì thói quen quản lý tài chính nhờ thông báo nhắc nhở định kỳ.
-
-> **Trạng thái**: Production-ready Prototype / Android Fresher Showcase Portfolio. Dữ liệu được lưu trữ 100% cục bộ trên thiết bị của người dùng, không phụ thuộc máy chủ bên thứ ba.
+**FinTrack** là ứng dụng Android Native quản lý tài chính cá nhân được thiết kế và xây dựng theo chuẩn **Local-First Vault**. Ứng dụng tập trung vào sự riêng tư tuyệt đối, tốc độ phản hồi tức thì và trải nghiệm người dùng hiện đại với 100% Jetpack Compose & Material 3. Toàn bộ dữ liệu được lưu trữ an toàn cục bộ trên thiết bị của người dùng mà không phụ thuộc vào máy chủ bên thứ ba.
 
 ---
 
-## Điểm nổi bật
-
-- **Kiến trúc Hiện đại**: MVVM kết hợp Unidirectional Data Flow (UDF), Kotlin Coroutines và StateFlow phản ứng thời gian thực (Reactive State).
-- **100% Jetpack Compose & Material 3**: Giao diện thuần khai báo (Declarative UI), hỗ trợ Edge-to-Edge mượt mà và chuyển đổi Dark/Light Theme tức thì.
-- **Local-First Database (Room)**: Room Database làm Local Source of Truth với quan hệ thực thể chặt chẽ (`CategoryEntity` $\leftrightarrow$ `TransactionEntity`), Indexing tối ưu truy vấn và Room Flow đồng bộ tự động.
-- **Tùy biến Cài đặt linh hoạt (DataStore Preferences)**: Lưu trữ cài đặt giao diện (Dark Mode), đa đơn vị tiền tệ (`VND ₫`, `USD $`, `EUR €`), giờ nhắc nhở và trạng thái Onboarding.
-- **Tác vụ nền & Thông báo định kỳ (WorkManager)**: `DailyReminderWorker` tự động lập lịch nhắc nhở 24h, tính toán thời gian trễ chính xác và kích hoạt thông báo qua Notification Channel ưu tiên mặc định trên Android 13+ (API 33+).
-- **Biểu đồ Trực quan hóa Tương tác (Canvas Charts)**: Tự phát triển Donut Chart phân tích tỷ trọng danh mục kèm thẻ chú thích linh hoạt và Grouped Bar Chart so sánh Thu vs Chi theo Tuần/Tháng/Năm.
-- **Chất lượng mã nguồn & Kiểm thử (Quality & Testing)**: Hoàn thành 100% bộ **43 bài kiểm thử đơn vị (Unit Tests)** độc lập bao phủ toàn bộ DAO, Repository, Util Formatters và ViewModel logic.
+## Mục lục
+1. [Điểm nổi bật](#-điểm-nổi-bật)
+2. [Bộ sưu tập Ảnh chụp thực tế](#-bộ-sưu-tập-ảnh-chụp-thực-tế)
+3. [Chi tiết Tính năng](#-chi-tiết-tính-năng)
+4. [Kiến trúc & Luồng dữ liệu](#-kiến-trúc--luồng-dữ-liệu)
+5. [Cấu trúc Thư mục](#-cấu-trúc-thư-mục)
+6. [Công nghệ & Thư viện](#-công-nghệ--thư-viện)
+7. [Kiểm thử Đơn vị (Unit Testing)](#-kiểm-thử-đơn-vị-unit-testing)
+8. [Hướng dẫn Cài đặt & Chạy](#-hướng-dẫn-cài-đặt--chạy)
 
 ---
 
-## Giao diện ứng dụng
+## 🌟 Điểm nổi bật
 
+- **Local-First Vault Architecture**: Dữ liệu tài chính được lưu trữ và quản lý an toàn 100% trên máy với Room Database và Jetpack DataStore, hoạt động offline hoàn toàn.
+- **100% Jetpack Compose & Material 3**: Giao diện thuần khai báo (Declarative UI), hỗ trợ Edge-to-Edge chuẩn Android 15, Dark Theme tự nhiên và chuyển động vi mô (micro-interactions) mượt mà.
+- **Nhập liệu số tiền thông minh**: Bộ lọc trực quan phân tách hàng nghìn bằng dấu chấm (`5.000.000 ₫`), tự động ẩn placeholder khi nhập và căn chỉnh vị trí con trỏ chính xác.
+- **Thẻ Insight Xu hướng Tài chính Động**: Tự động phân tích tỷ lệ giữ lại thu nhập theo thời gian thực dựa trên tổng thu chi thực tế trong tháng.
+- **Bộ điều hướng & Lọc kỳ thời gian linh hoạt**: Hỗ trợ chuyển đổi nhanh giữa các tháng `< Tháng 8, 2026 >`, lọc Hôm nay, Tuần, Tháng, Năm, Toàn thời gian và khoảng ngày tùy chọn.
+- **Biểu đồ Thống kê Canvas Chuyên nghiệp**: Donut Chart phân tích cơ cấu chi tiêu theo danh mục và Grouped Bar Chart so sánh đối ứng Thu vs Chi theo từng mốc thời gian.
+- **Tác vụ ngầm & Thông báo định kỳ (WorkManager)**: Lập lịch nhắc nhở ghi chép hàng ngày bền bỉ, sống sót qua khởi động lại máy mà không gây tốn pin.
+- **Độ tin cậy cao**: Bộ **53 bài kiểm thử đơn vị (Unit Tests)** độc lập bao phủ toàn diện Database DAOs, Repositories, ViewModels, Visual Transformations và Formatters.
+
+---
+
+## 📸 Bộ sưu tập Ảnh chụp thực tế
+
+Toàn bộ hình ảnh dưới đây được chụp trực tiếp từ thiết bị Android thật đang chạy ứng dụng FinTrack:
+
+### 1. Khởi động & Màn hình Chào mừng (Onboarding)
 <p align="center">
-  <img src="screenshots/01_home_dashboard.png" alt="Home Dashboard" width="31%" />
-  <img src="screenshots/02_transactions_filter.png" alt="Danh sách Giao dịch & Bộ lọc" width="31%" />
-  <img src="screenshots/03_statistics_charts.png" alt="Thống kê & Biểu đồ Tương tác" width="31%" />
+  <img src="screenshots/01_splash_screen.png" alt="Splash Screen" width="23%" />
+  <img src="screenshots/02_onboarding_slide1.png" alt="Onboarding Slide 1" width="23%" />
+  <img src="screenshots/03_onboarding_slide2.png" alt="Onboarding Slide 2" width="23%" />
+  <img src="screenshots/04_onboarding_slide3.png" alt="Onboarding Slide 3" width="23%" />
 </p>
+
+### 2. Trang chủ & Dashboard dòng tiền (Light & Dark Theme)
 <p align="center">
-  <img src="screenshots/04_add_transaction.png" alt="Thêm & Chỉnh sửa Giao dịch" width="31%" />
-  <img src="screenshots/05_settings_dark.png" alt="Chế độ Tối & Cài đặt Bảo mật" width="31%" />
-  <img src="screenshots/06_category_management.png" alt="Quản lý 12 Danh mục Hệ thống" width="31%" />
+  <img src="screenshots/05_home_dashboard.png" alt="Home Dashboard Light" width="45%" />
+  <img src="screenshots/06_home_dark.png" alt="Home Dashboard Dark" width="45%" />
+</p>
+
+### 3. Thêm / Chỉnh sửa Giao dịch & Định dạng số tiền
+<p align="center">
+  <img src="screenshots/07_add_transaction.png" alt="Thêm Khoản chi & Định dạng số tiền" width="30%" />
+  <img src="screenshots/08_add_income.png" alt="Thêm Khoản thu" width="30%" />
+  <img src="screenshots/09_transaction_detail.png" alt="Chi tiết Giao dịch" width="30%" />
+</p>
+
+### 4. Sổ giao dịch, Bộ điều hướng kỳ & Tìm kiếm
+<p align="center">
+  <img src="screenshots/10_transactions_list.png" alt="Sổ giao dịch theo kỳ tháng" width="30%" />
+  <img src="screenshots/11_period_selector_dialog.png" alt="Hộp thoại Chọn kỳ thời gian" width="30%" />
+  <img src="screenshots/12_transactions_search.png" alt="Tìm kiếm & Bộ lọc giao dịch" width="30%" />
+</p>
+
+### 5. Báo cáo & Thống kê Tài chính trực quan
+<p align="center">
+  <img src="screenshots/13_statistics_month.png" alt="Thống kê theo Tháng" width="30%" />
+  <img src="screenshots/14_statistics_week.png" alt="Thống kê theo Tuần" width="30%" />
+  <img src="screenshots/15_statistics_year.png" alt="Thống kê theo Năm" width="30%" />
+</p>
+
+### 6. Cài đặt Hệ thống, Bảo mật & Thông báo
+<p align="center">
+  <img src="screenshots/16_settings_main.png" alt="Cài đặt & Bảo mật" width="23%" />
+  <img src="screenshots/17_currency_dialog.png" alt="Đơn vị tiền tệ" width="23%" />
+  <img src="screenshots/18_category_management.png" alt="Quản lý Danh mục" width="23%" />
+  <img src="screenshots/20_notification_banner.png" alt="Thông báo Nhắc nhở" width="23%" />
 </p>
 
 ---
 
-## Chức năng chính
+## 🎯 Chi tiết Tính năng
 
-### 1. Quản lý Thu — Chi & Dashboard dòng tiền (Home & CRUD)
-- **Tổng quan Dashboard**: Hiển thị tổng số dư khả dụng, tổng tiền thu, tổng tiền chi và danh sách 5 giao dịch gần nhất.
-- **Thêm/Sửa/Xóa Giao dịch**: Form nhập liệu thông minh với bàn phím số, chọn danh mục trực quan kèm mã màu, ghi chú, định dạng ngày giờ và xác nhận xóa an toàn.
-- **Chống Submit đúp (Double Submit Prevention)**: Khóa nút lưu trong lúc xử lý và điều hướng an toàn qua Channel one-shot event.
+### 1. Trải nghiệm Khởi đầu (Onboarding & Splash)
+- Màn hình Splash nhận diện thương hiệu với hiệu ứng chuyển trang mượt mà.
+- Trình hướng dẫn 3 bước giới thiệu các tính năng cốt lõi: Quản lý chi tiêu, Phân tích trực quan và Bảo mật Local-First.
+- Trạng thái hoàn thành được lưu vào DataStore, hỗ trợ đặt lại (Reset Onboarding) trong Cài đặt.
 
-### 2. Tìm kiếm & Lọc giao dịch (Transactions)
-- Tìm kiếm từ khóa theo ghi chú hoặc danh mục thời gian thực.
-- Phân loại bộ lọc theo tab: **Tất cả**, **Khoản chi**, **Khoản thu**, **Tháng này**.
-- Nhóm giao dịch theo thời gian trong tháng kèm tổng thu chi theo từng ngày.
+### 2. Tổng quan Dashboard Tài chính (Home)
+- **Thẻ Số dư Tổng thể**: Hiển thị tổng số dư khả dụng, tổng tiền thu (+) và tổng tiền chi (-) trong tháng.
+- **Thẻ Xu hướng Tài chính Động**: Tự động tính tỷ lệ tiết kiệm/giữ lại thu nhập thực tế. Nếu chi tiêu vượt thu nhập, thẻ tự chuyển sang cảnh báo thâm hụt.
+- **Danh sách Giao dịch Gần nhất**: Xem nhanh các giao dịch mới nhất kèm nút "Xem tất cả" điều hướng sang Sổ giao dịch.
 
-### 3. Thống kê & Phân tích Chi tiêu (Statistics & Charts)
-- Bộ lọc linh hoạt theo chu kỳ: **Tuần**, **Tháng**, **Năm**.
-- **Donut Chart**: Trực quan hóa cơ cấu chi tiêu theo danh mục với tỷ lệ phần trăm và số tiền định dạng chuẩn xác.
-- **Grouped Bar Chart**: So sánh trực quan đối ứng giữa dòng tiền Thu vào và Chi ra theo từng mốc thời gian.
-- Xử lý trạng thái rỗng (Empty Chart State) khi chưa có dữ liệu phát sinh.
+### 3. Ghi chép Thu / Chi & Chi tiết Giao dịch (CRUD)
+- **Chuyển đổi loại giao dịch**: Nút chuyển đổi nhanh giữa `Khoản chi (-)` và `Khoản thu (+)`.
+- **Định dạng số tiền tự động**: Ứng dụng `ThousandsSeparatorVisualTransformation` tự động định dạng phân tách dấu chấm (ví dụ: `5.000.000 ₫`), tự ẩn số 0 placeholder khi focus để con trỏ không bị đè.
+- **Phân loại danh mục trực quan**: Chọn nhanh từ danh sách danh mục kèm icon màu sắc.
+- **Chi tiết & Thao tác an toàn**: Xem lại đầy đủ ngày giờ, loại giao dịch, ghi chú, hỗ trợ Sửa hoặc Xóa có hộp thoại xác nhận.
 
-### 4. Tùy chỉnh Hệ thống & Bảo mật (Settings & Local Vault)
-- Chuyển đổi Dark/Light Theme toàn ứng dụng phản ứng ngay lập tức.
-- Lựa chọn đơn vị tiền tệ: `VND (₫)`, `USD ($)`, `EUR (€)`.
-- Hộp thoại **Quản lý danh mục**: Hiển thị chi tiết 12 danh mục hệ thống (8 Chi tiêu, 3 Thu nhập, 1 Chung) kèm icon và color chip.
-- Cài đặt thời gian nhận thông báo nhắc nhở ghi chép hàng ngày (TimePicker).
-- Đặt lại Onboarding và Xóa sạch dữ liệu (Clear Data) an toàn.
+### 4. Sổ Giao dịch & Bộ điều hướng Kỳ thời gian
+- **Bộ điều hướng Tháng**: Dễ dàng duyệt lịch sử giữa các tháng qua cụm nút `< Tháng X, YYYY >`.
+- **Hộp thoại Chọn kỳ linh hoạt**: Cho phép lọc theo Hôm nay, Theo Tuần, Theo Tháng, Theo Năm, Toàn bộ thời gian hoặc Khoảng ngày tùy chọn.
+- **Tìm kiếm thời gian thực**: Lọc danh sách theo ghi chú hoặc tên danh mục tức thì.
+- **Nhóm theo ngày**: Tự động gom nhóm giao dịch theo từng ngày kèm tổng tiền chênh lệch của ngày đó.
 
-### 5. Tác vụ Chạy ngầm & Thông báo (WorkManager & Notifications)
-- Lập lịch định kỳ `PeriodicWorkRequest` 24 giờ một lần với `WorkManager`.
-- Kênh thông báo `fintrack_daily_reminder` với icon `ic_notification` chuẩn Material Design và độ ưu tiên `IMPORTANCE_DEFAULT`.
-- Tự động điều hướng về màn hình chính khi người dùng nhấn vào thông báo.
+### 5. Phân tích & Thống kê Chuyên sâu (Charts)
+- **Chỉ số KPIs**: Tổng chi, Tổng thu và chỉ số **Trung bình / ngày** được tính toán chính xác theo số ngày thực tế trong kỳ.
+- **Donut Chart (Biểu đồ tròn cơ cấu)**: Vẽ bằng Jetpack Compose Canvas, hiển thị tỷ trọng phần trăm từng danh mục chi tiêu kèm thanh chỉ báo màu sắc.
+- **Grouped Bar Chart (Biểu đồ cột so sánh)**: Hiển thị đối ứng song song giữa Thu nhập và Chi tiêu theo từng tuần/tháng.
+- **Empty State thông minh**: Minh họa trực quan khi chưa có dữ liệu giao dịch trong kỳ đã chọn.
+
+### 6. Cài đặt, Đa tiền tệ & Nhắc nhở (Settings)
+- **Local-First Vault Banner**: Khẳng định cam kết bảo mật và quyền sở hữu dữ liệu cục bộ của người dùng.
+- **Chuyển đổi Giao diện Tối (Dark Mode)**: Hỗ trợ chuyển đổi Theme tức thì không làm gián đoạn trạng thái ứng dụng.
+- **Đa đơn vị tiền tệ**: Hỗ trợ chuẩn định dạng cho `VND (₫)`, `USD ($)`, `EUR (€)`.
+- **Quản lý 12 Danh mục**: Xem đầy đủ 8 danh mục chi tiêu và 4 danh mục thu nhập chuẩn hệ thống.
+- **Nhắc nhở ghi chép hàng ngày**: Cài đặt giờ nhận thông báo qua TimePicker, tự động lên lịch chạy nền qua WorkManager.
+- **Quản trị dữ liệu**: Tùy chọn Đặt lại Onboarding hoặc Xóa toàn bộ dữ liệu (Clear All Data).
 
 ---
 
-## Kiến trúc hệ thống
+## 🏗 Kiến trúc & Luồng dữ liệu
+
+FinTrack tuân thủ chặt chẽ kiến trúc **Clean Architecture** và mô hình **MVVM** theo khuyến nghị của Google Android:
 
 ```mermaid
 flowchart TB
-    subgraph UI_Layer ["Presentation Layer (Jetpack Compose)"]
-        Screens["HomeScreen / TransactionsScreen\nStatisticsScreen / SettingsScreen\nAddEditTransactionScreen"]
-        VM["ViewModels\n(Home, Transactions, Statistics, Settings, AddEdit, Detail)"]
+    subgraph UI_Layer ["Presentation Layer (Jetpack Compose & Material 3)"]
+        Screens["HomeScreen / TransactionsScreen\nStatisticsScreen / SettingsScreen\nAddEditTransactionScreen / DetailScreen\nOnboardingScreen / SplashScreen"]
+        VM["ViewModels (StateFlow & Channel Events)\nHomeVM, TransactionsVM, StatisticsVM\nSettingsVM, AddEditVM, DetailVM, OnboardingVM"]
     end
 
-    subgraph Data_Layer ["Data Layer (Local-First Vault)"]
-        Repos["TransactionRepository / CategoryRepository\nPreferencesRepository"]
-        RoomDB["Room Database (AppDatabase)\nTransactionDao + CategoryDao"]
-        DataStore["Preferences DataStore\n(Theme, Currency, Notification Time)"]
-        Worker["WorkManager\n(DailyReminderWorker & ReminderScheduler)"]
-        Notif["NotificationHelper\n(Android Notification Channel)"]
+    subgraph Domain_Data_Layer ["Data Layer (Local-First Vault)"]
+        Repos["TransactionRepository\nCategoryRepository\nPreferencesRepository"]
+        RoomDB["Room Database (SQLite)\nTransactionDao + CategoryDao\n(Flow-based Reactive Queries)"]
+        DataStore["Jetpack DataStore Preferences\n(Theme, Currency, Reminder Time, Onboarding)"]
+        WorkMgr["WorkManager Engine\n(DailyReminderWorker & ReminderScheduler)"]
+        NotifHelper["Notification Helper\n(Android Notification Channel API 24-35)"]
     end
 
-    Screens -->|"Observes StateFlow"| VM
-    VM -->|"Dispatches User Intents"| Repos
-    Repos -->|"Reactive Flow"| RoomDB
-    Repos -->|"Preferences Flow"| DataStore
-    Worker -->|"Checks Preferences"| Repos
-    Worker -->|"Triggers Notification"| Notif
-    Notif -.->|"PendingIntent Launches"| Screens
+    Screens -->|"1. Gửi User Intents"| VM
+    VM -->|"2. Gọi Repositories"| Repos
+    Repos -->|"3. Truy vấn / Cập nhật"| RoomDB
+    Repos -->|"4. Đọc / Ghi Preferences"| DataStore
+    RoomDB -->|"5. Phát Flow<List<T>>"| Repos
+    Repos -->|"6. Chuyển tiếp Reactive Flow"| VM
+    VM -->|"7. stateIn -> StateFlow<UiState>"| Screens
+    WorkMgr -->|"8. Đọc cài đặt nhắc nhở"| Repos
+    WorkMgr -->|"9. Kích hoạt thông báo"| NotifHelper
+    NotifHelper -.->|"10. PendingIntent mở app"| Screens
 ```
 
-### Luồng dữ liệu (Data Flow)
-1. **Unidirectional Data Flow (UDF)**: UI bắn các sự kiện (Events/Intents) tới ViewModel $\rightarrow$ ViewModel gọi Repository $\rightarrow$ Repository cập nhật Room DAO hoặc DataStore.
-2. **Reactive Flow**: Room Database phát ra `Flow<List<TransactionWithCategory>>` $\rightarrow$ Repository chuyển tiếp $\rightarrow$ ViewModel sử dụng `stateIn` biến đổi thành `StateFlow<UiState>` $\rightarrow$ Composable thu nạp qua `collectAsStateWithLifecycle()` và render lại giao diện mượt mà.
-3. **Background Worker**: Khi tới giờ hẹn định kỳ, Android OS đánh thức `DailyReminderWorker` $\rightarrow$ kiểm tra DataStore $\rightarrow$ gửi thông báo nhắc người dùng ghi sổ nếu đang bật tính năng.
+### Nguyên tắc thiết kế cốt lõi:
+1. **Unidirectional Data Flow (UDF)**: Trạng thái (State) đi xuống giao diện, sự kiện (Events) đi lên ViewModel.
+2. **Single Source of Truth (SSOT)**: Room Database và DataStore là nguồn dữ liệu duy nhất đáng tin cậy. UI chỉ quan sát luồng `Flow` phát ra từ Database.
+3. **Immutability & Thread Safety**: Mọi trạng thái UI đều là immutable `data class`, các thao tác ghi dữ liệu chạy trên `Dispatchers.IO` thông qua Coroutines.
 
 ---
 
-## Cấu trúc thư mục dự án
+## 📁 Cấu trúc Thư mục
 
 ```text
 FinTrack/
@@ -117,13 +177,13 @@ FinTrack/
 │   │   ├── MainActivity.kt                   # Single Activity entry point & Permission handling
 │   │   ├── data/
 │   │   │   ├── local/
-│   │   │   │   ├── AppDatabase.kt            # Room Database definition & TypeConverters
-│   │   │   │   ├── DefaultCategories.kt      # 12 pre-seeded categories
+│   │   │   │   ├── AppDatabase.kt            # Room Database & TypeConverters definition
+│   │   │   │   ├── DefaultCategories.kt      # Danh sách 12 danh mục mặc định
 │   │   │   │   ├── converters/               # Room Type Converters (Date, Enum)
 │   │   │   │   ├── dao/                      # TransactionDao, CategoryDao
 │   │   │   │   ├── entity/                   # TransactionEntity, CategoryEntity
 │   │   │   │   ├── model/                    # CategoryExpense, PeriodFilter, TransactionWithCategory
-│   │   │   │   └── preferences/              # UserPreferences, Theme & Currency enums
+│   │   │   │   └── preferences/              # UserPreferences, Theme & Currency configs
 │   │   │   ├── notification/                 # NotificationHelper & Channel configuration
 │   │   │   └── repository/                   # TransactionRepository, CategoryRepository, PreferencesRepository
 │   │   ├── ui/
@@ -133,96 +193,90 @@ FinTrack/
 │   │   │   │   ├── add_edit/                 # AddEditTransactionScreen & ViewModel
 │   │   │   │   ├── detail/                   # TransactionDetailScreen & ViewModel
 │   │   │   │   ├── home/                     # HomeScreen & HomeViewModel
-│   │   │   │   ├── settings/                 # SettingsScreen, SettingsViewModel, Dialogs
+│   │   │   │   ├── onboarding/               # OnboardingScreen & OnboardingViewModel
+│   │   │   │   ├── settings/                 # SettingsScreen, SettingsViewModel & Dialogs
 │   │   │   │   ├── splash/                   # SplashScreen
 │   │   │   │   ├── statistics/               # StatisticsScreen, ViewModel, DonutChart, BarChart
 │   │   │   │   └── transactions/             # TransactionsScreen & TransactionsViewModel
 │   │   │   ├── theme/                        # Theme, Color tokens, Type typography
-│   │   │   ├── util/                         # CategoryIconHelper, CurrencyFormatter, DateTimeExtensions
+│   │   │   ├── util/                         # CategoryIconHelper, CurrencyFormatter, DateTimeExtensions, ThousandsSeparatorVisualTransformation
 │   │   │   └── viewmodel/                    # AppViewModelProvider Factory
 │   │   └── worker/                           # DailyReminderWorker & ReminderScheduler
-│   └── src/test/java/com/fintrack/app/       # Full 43 Unit Tests Suite
-├── screenshots/                              # Live device capture screenshots
-└── README.md                                 # Portfolio Documentation
+│   └── src/test/java/com/fintrack/app/       # Bộ 53 bài Unit Tests kiểm thử toàn diện
+├── screenshots/                              # Bộ ảnh chụp màn hình thực tế từ thiết bị
+└── README.md                                 # Tài liệu kỹ thuật dự án
 ```
 
 ---
 
-## Bảng công nghệ sử dụng
+## 💻 Công nghệ & Thư viện
 
-| Nhóm | Công nghệ / Thư viện | Phiên bản |
-|---|---|---|
-| **Language & Build** | Kotlin, Gradle Kotlin DSL, Java 17, Desugaring | Kotlin `2.3.20`, AGP `9.0.1`, `desugar_jdk_libs:2.1.4` |
-| **UI Toolkit** | Jetpack Compose, Material 3, Navigation Compose | Compose BOM `2025.02.00`, M3 `1.3.1` |
-| **Architecture** | MVVM, Unidirectional Data Flow, Coroutines, StateFlow | Coroutines `1.10.1` |
-| **Local Database** | Room Database (Flow, DAO, Foreign Keys, Indexing) | Room `2.6.1` (KSP `2.3.6`) |
-| **Preferences** | Jetpack DataStore Preferences | DataStore `1.1.3` |
-| **Background Work** | WorkManager (PeriodicWorkRequest, CoroutineWorker) | WorkManager `2.10.0` |
-| **Notifications** | Android Notification Manager, Notification Channel | API 24+ / API 33+ / API 35 Compatible |
-| **Unit Testing** | JUnit 4, Kotlinx Coroutines Test | JUnit `4.13.2` (43 tests passed) |
+| Phân loại | Công nghệ / Thư viện | Phiên bản | Mô tả vai trò |
+|---|---|---|---|
+| **Core & Ngôn ngữ** | Kotlin | `2.3.20` | Ngôn ngữ phát triển chính |
+| **Build System** | Android Gradle Plugin (AGP) | `9.0.1` | Hệ thống biên dịch hiện đại |
+| **Java Compatibility** | JDK 17 & Core Library Desugaring | `desugar_jdk_libs:2.1.4` | Hỗ trợ `java.time` trên Android API 24+ |
+| **UI Toolkit** | Jetpack Compose BOM | `2025.02.00` | Khung phát triển giao diện khai báo |
+| **Design System** | Material 3 | `1.3.1` | Hệ thống thiết kế chuẩn Material Design 3 |
+| **Điều hướng** | Navigation Compose | `2.8.8` | Quản lý chuyển màn hình và điều hướng |
+| **Cơ sở dữ liệu** | Room Database (KSP) | `2.6.1` (KSP `2.3.6`) | Cơ sở dữ liệu SQLite cục bộ |
+| **Lưu trữ Cài đặt** | Jetpack DataStore Preferences | `1.1.3` | Lưu cấu hình người dùng an toàn |
+| **Tác vụ Nền** | AndroidX WorkManager | `2.10.0` | Lập lịch thông báo nhắc nhở định kỳ |
+| **Bất đồng bộ** | Kotlin Coroutines & StateFlow | `1.10.1` | Xử lý đa luồng và reactive streams |
+| **Kiểm thử Đơn vị** | JUnit 4 & Coroutines Test | `4.13.2` | Bộ 53 bài test kiểm thử logic |
 
 ---
 
-## Kiểm thử & Chất lượng (Unit Testing)
+## 🧪 Kiểm thử Đơn vị (Unit Testing)
 
-Dự án chú trọng tính đúng đắn của logic tài chính với **43 bài unit test độc lập** đạt tỷ lệ thành công 100%:
+Dự án trang bị bộ **53 bài kiểm thử đơn vị độc lập** bao phủ toàn bộ các tầng kiến trúc cốt lõi:
 
+| Nhóm Kiểm thử | Test Class | Số bài test | Trạng thái |
+|---|---|:---:|:---:|
+| **Converters** | `AppTypeConvertersTest` | 2 | ✅ 100% Passed |
+| **Data Repositories** | `CategoryRepositoryTest`<br>`TransactionRepositoryTest` | 4<br>3 | ✅ 100% Passed<br>✅ 100% Passed |
+| **Tiện ích & Formatters** | `CurrencyFormatterTest`<br>`DateTimeExtensionsTest`<br>`ThousandsSeparatorVisualTransformationTest` | 7<br>3<br>4 | ✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed |
+| **ViewModels & UI State** | `AddEditTransactionViewModelTest`<br>`HomeViewModelTest`<br>`OnboardingViewModelTest`<br>`SettingsViewModelTest`<br>`StatisticsViewModelTest`<br>`TransactionDetailViewModelTest`<br>`TransactionsViewModelTest` | 6<br>3<br>1<br>6<br>3<br>4<br>7 | ✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed |
+| **Tổng cộng** | **13 Test Classes** | **53 Tests** | **✅ 100% Passed (0 Failures)** |
+
+Lệnh thực thi toàn bộ test suite:
 ```powershell
-# Chạy toàn bộ Unit Test Suite
 .\gradlew.bat testDebugUnitTest
 ```
 
 ---
 
-## Hướng dẫn cài đặt & Chạy ứng dụng
+## 🚀 Hướng dẫn Cài đặt & Chạy
 
-### 1. Yêu cầu môi trường
-- **Android Studio**: Android Studio Ladybug | 2024.2+ hoặc mới hơn.
+### 1. Yêu cầu Môi trường
+- **Android Studio**: Android Studio Ladybug (2024.2+) hoặc mới hơn.
 - **JDK**: Java 17 trở lên.
-- **Android SDK**: `compileSdk = 35`, `targetSdk = 35`, `minSdk = 24` (Hỗ trợ từ Android 7.0 trở lên).
+- **Thiết bị / Giả lập**: Android API 24 (Android 7.0) trở lên (Khuyến nghị Android 13+ để trải nghiệm đầy đủ Notification Permission).
 
-### 2. Clone Repository
+### 2. Tải mã nguồn
 ```bash
 git clone https://github.com/haitranduc203/Personal-Finance.git
 cd Personal-Finance
 ```
 
-### 3. Build & Cài đặt lên thiết bị
+### 3. Biên dịch và Cài đặt lên thiết bị
 Mở terminal trong thư mục dự án và chạy:
 
-**Windows PowerShell**:
 ```powershell
-# Chạy kiểm thử đơn vị
+# Chạy Unit Tests
 .\gradlew.bat testDebugUnitTest
 
 # Biên dịch gói APK Debug
 .\gradlew.bat assembleDebug
 
-# Cài đặt trực tiếp lên thiết bị (nếu đã kết nối ADB)
-adb install -r app/build/outputs/apk/debug/app-debug.apk
-```
-
-**macOS / Linux**:
-```bash
-./gradlew testDebugUnitTest assembleDebug
-adb install -r app/build/outputs/apk/debug/app-debug.apk
+# Cài đặt trực tiếp lên thiết bị đang kết nối
+.\gradlew.bat installDebug
 ```
 
 ---
 
-## Các quyết định kỹ thuật đáng chú ý (Technical Decisions)
+## 📄 Bản quyền & Tác giả
 
-| Vấn đề | Giải pháp triển khai | Lý do & Trade-off |
-|---|---|---|
-| **Bảo mật dữ liệu tài chính** | Kiến trúc **Local-First Vault** với Room Database | Người dùng có toàn quyền kiểm soát dữ liệu của mình, tốc độ tức thì, hoạt động 100% offline không lo rò rỉ dữ liệu. |
-| **Phản ứng dữ liệu tức thì** | Sử dụng Room Flow kết hợp `StateFlow` trong ViewModel | UI luôn phản ánh trạng thái mới nhất ngay khi CRUD mà không cần gọi API refresh thủ công. |
-| **Vẽ biểu đồ hiệu năng cao** | Tự thiết kế Canvas Donut & Bar Chart thuần Compose | Không phụ thuộc thư viện bên thứ 3 nặng nề, dễ tùy biến kích thước, màu sắc và animation theo Material 3. |
-| **Nhắc nhở đúng giờ & tiết kiệm pin** | `WorkManager` với `PeriodicWorkRequest` 24h & Initial Delay | Đảm bảo hệ thống Android tự động tối ưu hóa pin (Doze mode) nhưng vẫn kích hoạt thông báo chính xác mỗi ngày. |
-| **Quản lý Quyền Android 13+** | Khai báo `POST_NOTIFICATIONS` và kiểm tra runtime permission | Đảm bảo tuân thủ chính sách mới của Google Play và trải nghiệm người dùng liền mạch. |
-
----
-
-## Tác giả
-
-Phát triển bởi **Trần Đức Hải** ([@haitranduc203](https://github.com/haitranduc203))  
-Mục đích: **Dự án Portfolio Android Fresher / Mobile Developer Showcase**.
+- **Tác giả**: [Trần Đức Hải](https://github.com/haitranduc203)
+- **Dự án**: FinTrack — Personal Finance Management Android App
+- **Giấy phép**: MIT License
