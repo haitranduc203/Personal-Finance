@@ -1,3 +1,154 @@
 <resources>
     <string name="app_name">FinTrack</string>
+
+    <!-- Common Actions -->
+    <string name="action_cancel">Hủy</string>
+    <string name="action_save">Lưu</string>
+    <string name="action_delete">Xóa</string>
+    <string name="action_delete_all">Xóa hết</string>
+    <string name="action_edit">Chỉnh sửa</string>
+    <string name="action_close">Đóng</string>
+    <string name="action_confirm">Xác nhận</string>
+    <string name="action_agree">Đồng ý</string>
+    <string name="action_back">Quay lại</string>
+    <string name="action_done">Hoàn thành</string>
+
+    <!-- Bottom Navigation -->
+    <string name="nav_home">Trang chủ</string>
+    <string name="nav_transactions">Giao dịch</string>
+    <string name="nav_statistics">Thống kê</string>
+    <string name="nav_settings">Cài đặt</string>
+    <string name="action_add_new_transaction">Thêm giao dịch mới</string>
+
+    <!-- Splash & Onboarding -->
+    <string name="splash_slogan">Quản lý tài chính cá nhân thông minh, bảo mật &amp; hiệu quả</string>
+    <string name="splash_security_badge">100% OFFLINE • BẢO MẬT CỤC BỘ</string>
+    <string name="splash_version">Phiên bản 1.0.0 (Build 2026)</string>
+    <string name="onboarding_skip">Bỏ qua</string>
+    <string name="onboarding_next">Tiếp theo</string>
+    <string name="onboarding_start">Bắt đầu ngay</string>
+    <string name="onboarding_title_1">Quản Lý Thu Chi Đơn Giản</string>
+    <string name="onboarding_desc_1">Ghi chép các khoản chi tiêu và thu nhập hàng ngày nhanh chóng chỉ trong vài giây.</string>
+    <string name="onboarding_title_2">Thống Kê Trực Quan</string>
+    <string name="onboarding_desc_2">Báo cáo chi tiết theo tuần, tháng, năm với biểu đồ phân tích cơ cấu chi tiêu thông minh.</string>
+    <string name="onboarding_title_3">Bảo Mật Tuyệt Đối</string>
+    <string name="onboarding_desc_3">Dữ liệu được lưu trữ an toàn 100% offline trên thiết bị của bạn, không gửi lên bất kỳ máy chủ nào.</string>
+
+    <!-- Home Screen -->
+    <string name="home_greeting">Xin chào 👋</string>
+    <string name="home_dashboard_title">FinTrack Dashboard</string>
+    <string name="home_balance_title">Tổng số dư khả dụng</string>
+    <string name="home_income">Tiền thu</string>
+    <string name="home_expense">Tiền chi</string>
+    <string name="home_trend_title">Xu hướng chi tiêu tháng này</string>
+    <string name="home_trend_desc">Bạn đã tiết kiệm được 65% ngân sách dự kiến</string>
+    <string name="home_recent_title">Giao dịch gần đây</string>
+    <string name="home_see_all">Xem tất cả</string>
+    <string name="home_empty_title">Chưa có giao dịch</string>
+    <string name="home_empty_desc">Ghi lại chi tiêu đầu tiên để quản lý tài chính hiệu quả.</string>
+    <string name="home_add_transaction">Thêm giao dịch</string>
+    <string name="month_format">Tháng %1$d, %2$d</string>
+    <string name="year_format">Năm %1$d</string>
+
+    <!-- Transactions Screen -->
+    <string name="transactions_title">Lịch sử thu chi</string>
+    <string name="transactions_subtitle">Sổ giao dịch</string>
+    <string name="transactions_search_hint">Tìm kiếm giao dịch…</string>
+    <string name="transactions_search_clear">Xóa tìm kiếm</string>
+    <string name="transactions_total_count">Tổng %1$d giao dịch</string>
+    <string name="transactions_total_summary">Tổng %1$d giao dịch   Thu: %2$s   Chi: %3$s</string>
+    <string name="transactions_empty_search">Không tìm thấy giao dịch</string>
+    <string name="transactions_empty_search_desc">Hãy thử từ khóa khác hoặc xóa bộ lọc</string>
+    <string name="transactions_empty_title">Chưa có giao dịch nào</string>
+    <string name="transactions_empty_desc">Bắt đầu ghi chép khoản thu hoặc chi tiêu đầu tiên của bạn!</string>
+    <string name="transactions_add_now">Thêm giao dịch ngay</string>
+    <string name="transactions_filter_all">Tất cả</string>
+    <string name="transactions_filter_expense">Khoản chi</string>
+    <string name="transactions_filter_income">Khoản thu</string>
+    <string name="transactions_filter_this_month">Tháng này</string>
+    <string name="date_today_format">Hôm nay, %1$s</string>
+    <string name="date_yesterday_format">Hôm qua, %1$s</string>
+
+    <!-- Add / Edit Screen -->
+    <string name="add_title">Thêm giao dịch mới</string>
+    <string name="add_subtitle">Ghi chép dòng tiền của bạn</string>
+    <string name="edit_title">Cập nhật giao dịch</string>
+    <string name="edit_subtitle">Sửa thông tin thu chi</string>
+    <string name="add_type_expense">Khoản chi (-)</string>
+    <string name="add_type_income">Khoản thu (+)</string>
+    <string name="add_amount_label">SỐ TIỀN GIAO DỊCH</string>
+    <string name="add_category_label">DANH MỤC</string>
+    <string name="add_category_loading">Đang tải danh mục…</string>
+    <string name="add_time_label">THỜI GIAN</string>
+    <string name="add_note_label">GHI CHÚ (TÙY CHỌN)</string>
+    <string name="add_note_hint">Ví dụ: Ăn trưa phở bò với bạn bè…</string>
+    <string name="add_save">Lưu giao dịch</string>
+    <string name="add_update">Cập nhật giao dịch</string>
+    <string name="add_error_amount">Vui lòng nhập số tiền hợp lệ (> 0)</string>
+    <string name="add_error_category">Vui lòng chọn một danh mục</string>
+    <string name="add_error_not_found">Không tìm thấy giao dịch</string>
+
+    <!-- Detail Screen -->
+    <string name="detail_title">Chi tiết giao dịch</string>
+    <string name="detail_date">Ngày giao dịch</string>
+    <string name="detail_time">Thời gian</string>
+    <string name="detail_type">Loại giao dịch</string>
+    <string name="detail_type_expense">Chi phí sinh hoạt</string>
+    <string name="detail_type_income">Dòng tiền thu vào</string>
+    <string name="detail_note">Ghi chú</string>
+    <string name="detail_no_note">Không có ghi chú</string>
+    <string name="detail_delete_title">Xóa giao dịch này?</string>
+    <string name="detail_delete_msg">Bạn có chắc chắn muốn xóa giao dịch \"%1$s - %2$s\"? Hành động này không thể hoàn tác.</string>
+
+    <!-- Statistics Screen -->
+    <string name="stats_title">Thống kê tài chính</string>
+    <string name="stats_subtitle">Báo cáo &amp; Phân tích</string>
+    <string name="stats_period_week">Tuần</string>
+    <string name="stats_period_month">Tháng</string>
+    <string name="stats_period_year">Năm</string>
+    <string name="stats_total_expense">Tổng chi</string>
+    <string name="stats_total_income">Tổng thu</string>
+    <string name="stats_daily_avg">Trung bình/ngày</string>
+    <string name="stats_category_breakdown">Cơ cấu chi tiêu theo danh mục</string>
+    <string name="stats_category_empty">Chưa có dữ liệu chi tiêu trong khoảng thời gian này.</string>
+    <string name="stats_trend_daily">So sánh Thu - Chi theo ngày</string>
+    <string name="stats_trend_weekly">So sánh Thu - Chi theo tuần</string>
+    <string name="stats_trend_quarterly">So sánh Thu - Chi theo quý</string>
+    <string name="stats_legend_income">Tiền thu</string>
+    <string name="stats_legend_expense">Tiền chi</string>
+
+    <!-- Settings Screen -->
+    <string name="settings_title">Cài đặt &amp; Bảo mật</string>
+    <string name="settings_subtitle">Tùy chỉnh hệ thống</string>
+    <string name="settings_section_interface">GIAO DIỆN &amp; TIỀN TỆ</string>
+    <string name="settings_dark_theme">Giao diện tối (Dark Theme)</string>
+    <string name="settings_dark_theme_desc">Chuyển đổi tông màu tối để bảo vệ mắt</string>
+    <string name="settings_currency">Đơn vị tiền tệ</string>
+    <string name="settings_currency_dialog_title">Chọn đơn vị tiền tệ</string>
+    <string name="settings_section_notification">THÔNG BÁO</string>
+    <string name="settings_daily_reminder">Nhắc nhở ghi sổ hàng ngày</string>
+    <string name="settings_daily_reminder_desc">Nhận thông báo nhắc ghi chép chi tiêu</string>
+    <string name="settings_reminder_time">Thời gian nhắc nhở</string>
+    <string name="settings_section_data">QUẢN LÝ DỮ LIỆU</string>
+    <string name="settings_category_management">Quản lý danh mục</string>
+    <string name="settings_category_dialog_title">Danh mục hệ thống</string>
+    <string name="settings_category_count">%1$d danh mục</string>
+    <string name="settings_reset_onboarding">Đặt lại Onboarding</string>
+    <string name="settings_reset_onboarding_title">Đặt lại Onboarding?</string>
+    <string name="settings_reset_onboarding_desc">Ứng dụng sẽ hiển thị lại các màn hình hướng dẫn giới thiệu khi bạn khởi động lại.</string>
+    <string name="settings_reset_onboarding_success">Đã đặt lại trạng thái Onboarding</string>
+    <string name="settings_clear_data">Xóa toàn bộ dữ liệu</string>
+    <string name="settings_clear_data_title">Xóa toàn bộ dữ liệu?</string>
+    <string name="settings_clear_data_desc">Toàn bộ lịch sử giao dịch và cài đặt sẽ bị xóa vĩnh viễn khỏi thiết bị. Hành động này không thể hoàn tác.</string>
+    <string name="settings_clear_data_success">Đã xóa toàn bộ dữ liệu thành công</string>
+    <string name="settings_section_about">THÔNG TIN ỨNG DỤNG</string>
+    <string name="settings_version_title">Phiên bản</string>
+    <string name="settings_version_value">1.0.0 (Build 2026)</string>
+
+    <!-- Notification Helper -->
+    <string name="notif_channel_name">Nhắc nhở ghi chép chi tiêu</string>
+    <string name="notif_channel_desc">Thông báo nhắc người dùng ghi chép chi tiêu và thu nhập hàng ngày</string>
+    <string name="notif_title">Đừng quên ghi chép chi tiêu hôm nay! 📝</string>
+    <string name="notif_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính chính xác nhé.</string>
+    <string name="notif_big_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính và theo dõi ngân sách chính xác nhé.</string>
 </resources>
