@@ -16,11 +16,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -130,6 +133,7 @@ fun HomeScreen(
         incomeFormatted = incomeFormatted,
         expenseFormatted = expenseFormatted,
         selectedMonth = uiState.selectedMonth,
+        insight = uiState.insight,
         recentTransactions = transactionsUi,
         onSeeAllTransactionsClick = onNavigateToTransactions,
         onTransactionClick = onNavigateToTransactionDetail,
@@ -148,6 +152,7 @@ fun HomeScreenContent(
     incomeFormatted: String,
     expenseFormatted: String,
     selectedMonth: String,
+    insight: FinancialInsightUi,
     recentTransactions: List<HomeTransactionUi>,
     onSeeAllTransactionsClick: () -> Unit,
     onTransactionClick: (Long) -> Unit,
@@ -238,7 +243,7 @@ fun HomeScreenContent(
 
             // 2. Trend Preview Card
             item {
-                TrendPreviewCard()
+                TrendPreviewCard(insight = insight)
             }
 
             // 3. Recent Transactions Header
@@ -422,12 +427,36 @@ fun HeroBalanceCard(
 }
 
 /**
- * Mini Trend Preview Card widget on Home.
+ * Dynamic Trend & Financial Insight Card on Home Dashboard.
  */
 @Composable
 fun TrendPreviewCard(
+    insight: FinancialInsightUi,
     modifier: Modifier = Modifier
 ) {
+    val (icon, tint, bgColor) = when (insight.iconType) {
+        InsightIconType.SAVING_UP -> Triple(
+            Icons.AutoMirrored.Filled.TrendingUp,
+            SemanticGreen,
+            SemanticGreen.copy(alpha = 0.12f)
+        )
+        InsightIconType.OVERSPENT -> Triple(
+            Icons.AutoMirrored.Filled.TrendingDown,
+            SemanticRed,
+            SemanticRed.copy(alpha = 0.12f)
+        )
+        InsightIconType.NO_EXPENSE -> Triple(
+            Icons.Default.CheckCircle,
+            SemanticGreen,
+            SemanticGreen.copy(alpha = 0.12f)
+        )
+        InsightIconType.FIRST_STEPS -> Triple(
+            Icons.Default.Info,
+            MaterialTheme.colorScheme.secondary,
+            MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)
+        )
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -447,26 +476,26 @@ fun TrendPreviewCard(
                 modifier = Modifier
                     .size(44.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.secondary.copy(alpha = 0.12f)),
+                    .background(bgColor),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.AutoMirrored.Filled.TrendingUp,
+                    icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.secondary,
+                    tint = tint,
                     modifier = Modifier.size(24.dp)
                 )
             }
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.home_trend_title),
+                    text = insight.title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = stringResource(R.string.home_trend_desc),
+                    text = insight.description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -561,6 +590,10 @@ private fun HomeScreenEmptyPreview() {
             incomeFormatted = "0 ₫",
             expenseFormatted = "0 ₫",
             selectedMonth = "Tháng 8, 2026",
+            insight = FinancialInsightUi(
+                title = "Sẵn sàng quản lý tài chính",
+                description = "Ghi chép giao dịch đầu tiên để theo dõi dòng tiền hiệu quả"
+            ),
             recentTransactions = emptyList(),
             onSeeAllTransactionsClick = {},
             onTransactionClick = {},

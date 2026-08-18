@@ -3,11 +3,13 @@ package com.fintrack.app.ui.viewmodel
 import com.fintrack.app.data.local.entity.TransactionEntity
 import com.fintrack.app.data.local.model.TransactionType
 import com.fintrack.app.ui.screens.home.HomeViewModel
+import com.fintrack.app.ui.screens.home.InsightIconType
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -33,17 +35,18 @@ class HomeViewModelTest {
     }
 
     @Test
-    fun initialEmptyState_calculatesZeroBalances() = runTest {
+    fun initialEmptyState_calculatesZeroBalances_andShowsFirstStepsInsight() = runTest {
         val state = viewModel.uiState.first { !it.isLoading }
         assertFalse(state.isLoading)
         assertEquals(0L, state.balance)
         assertEquals(0L, state.totalIncome)
         assertEquals(0L, state.totalExpense)
         assertEquals(0, state.recentTransactions.size)
+        assertEquals(InsightIconType.FIRST_STEPS, state.insight.iconType)
     }
 
     @Test
-    fun withTransactions_calculatesMonthlyBalanceAndRecentList() = runTest {
+    fun withTransactions_calculatesMonthlyBalanceAndDynamicInsight() = runTest {
         val now = System.currentTimeMillis()
         fakeTransactionRepository.addTransaction(
             TransactionEntity(
@@ -82,5 +85,40 @@ class HomeViewModelTest {
         assertEquals(18000000L, state.balance)
         assertEquals(3, state.recentTransactions.size)
         assertEquals("Ăn uống", state.recentTransactions[1].category.name)
+
+        // 20tr income, 2tr expense => 90% saved
+        assertTrue(state.insight.isPositive)
+        assertEquals(InsightIconType.SAVING_UP, state.insight.iconType)
+        assertTrue(state.insight.description.contains("90%"))
+    }
+
+    @Test
+    fun withOverspent_calculatesOverspentAlertInsight() = runTest {
+        val now = System.currentTimeMillis()
+        fakeTransactionRepository.addTransaction(
+            TransactionEntity(
+                id = 1L,
+                amount = 5000000L,
+                type = TransactionType.INCOME,
+                categoryId = 8L,
+                note = "Thu nhập phụ",
+                transactionDate = now
+            )
+        )
+        fakeTransactionRepository.addTransaction(
+            TransactionEntity(
+                id = 2L,
+                amount = 8000000L,
+                type = TransactionType.EXPENSE,
+                categoryId = 4L,
+                note = "Tiền thuê nhà",
+                transactionDate = now
+            )
+        )
+
+        val state = viewModel.uiState.first { it.recentTransactions.size == 2 }
+        assertFalse(state.insight.isPositive)
+        assertEquals(InsightIconType.OVERSPENT, state.insight.iconType)
+        assertTrue(state.insight.description.contains("vượt quá"))
     }
 }
