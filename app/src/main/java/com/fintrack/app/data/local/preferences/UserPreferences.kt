@@ -31,7 +31,7 @@ data class UserPreferences(
     val isDailyReminderEnabled: Boolean = true,
     val reminderHour: Int = 20,
     val reminderMinute: Int = 0,
-    val isOnboardingCompleted: Boolean = true
+    val isOnboardingCompleted: Boolean = false
 ) {
     val reminderTimeFormatted: String
         get() = String.format("%02d:%02d", reminderHour, reminderMinute)

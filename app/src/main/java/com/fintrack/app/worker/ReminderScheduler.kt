@@ -29,6 +29,13 @@ object ReminderScheduler {
 
     /**
      * Schedules or updates the 24-hour periodic reminder worker.
+     *
+     * Architectural Note on Timing Trade-Offs:
+     * WorkManager is intentionally chosen over AlarmManager for daily expense reminders.
+     * WorkManager provides battery-friendly execution that survives device reboots and respects
+     * system Doze mode without requiring the sensitive SCHEDULE_EXACT_ALARM permission.
+     * While trigger times are approximate (best-effort window), it is optimal for non-critical
+     * daily reminders where a 10-15 minute tolerance is acceptable.
      */
     fun scheduleReminder(context: Context, hour: Int, minute: Int) {
         val initialDelayMillis = calculateInitialDelay(hour, minute)

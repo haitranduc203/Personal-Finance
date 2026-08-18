@@ -59,7 +59,7 @@ class FinTrackApplication : Application() {
                     )
                 }
             } catch (e: Exception) {
-                // Ignore initialization failures
+                android.util.Log.e("FinTrackApp", "Init failed: seed/schedule", e)
             }
         }
     }

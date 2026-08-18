@@ -22,9 +22,9 @@ object NotificationHelper {
      */
     fun createNotificationChannel(context: Context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val name = "Nhắc nhở ghi chép chi tiêu"
-            val descriptionText = "Thông báo nhắc người dùng ghi chép chi tiêu và thu nhập hàng ngày"
-            val importance = NotificationManager.IMPORTANCE_HIGH
+            val name = context.getString(com.fintrack.app.R.string.notif_channel_name)
+            val descriptionText = context.getString(com.fintrack.app.R.string.notif_channel_desc)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
             val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
                 description = descriptionText
                 enableVibration(true)
@@ -55,15 +55,16 @@ object NotificationHelper {
         )
 
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_menu_edit)
-            .setContentTitle("Đừng quên ghi chép chi tiêu hôm nay! 📝")
-            .setContentText("Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính chính xác nhé.")
+            .setSmallIcon(com.fintrack.app.R.drawable.ic_notification)
+            .setContentTitle(context.getString(com.fintrack.app.R.string.notif_title))
+            .setContentText(context.getString(com.fintrack.app.R.string.notif_text))
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính và theo dõi ngân sách chính xác nhé.")
+                    .bigText(context.getString(com.fintrack.app.R.string.notif_big_text))
             )
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PRIVATE)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()

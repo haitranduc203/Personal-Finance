@@ -58,7 +58,7 @@ class PreferencesRepositoryImpl(
             val isDailyReminderEnabled = preferences[PreferencesKeys.DAILY_REMINDER_ENABLED] ?: true
             val reminderHour = preferences[PreferencesKeys.REMINDER_HOUR] ?: 20
             val reminderMinute = preferences[PreferencesKeys.REMINDER_MINUTE] ?: 0
-            val isOnboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: true
+            val isOnboardingCompleted = preferences[PreferencesKeys.ONBOARDING_COMPLETED] ?: false
 
             UserPreferences(
                 theme = theme,
