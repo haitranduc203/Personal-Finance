@@ -110,6 +110,9 @@ class AddEditTransactionViewModelTest {
             .toInstant()
             .toEpochMilli()
 
+        val originalCreatedAt = 1_700_000_000_000L
+        val originalUpdatedAt = 1_700_000_100_000L
+
         val existingId = transactionRepository.addTransaction(
             TransactionEntity(
                 id = 0L,
@@ -117,7 +120,9 @@ class AddEditTransactionViewModelTest {
                 type = TransactionType.EXPENSE,
                 categoryId = 2L,
                 transactionDate = epochMillis,
-                note = "Mua sắm quần áo"
+                note = "Mua sắm quần áo",
+                createdAt = originalCreatedAt,
+                updatedAt = originalUpdatedAt
             )
         )
 
@@ -138,6 +143,8 @@ class AddEditTransactionViewModelTest {
         val updated = transactionRepository.getTransactionById(existingId)
         assertNotNull(updated)
         assertEquals(300000L, updated!!.transaction.amount)
+        assertEquals(originalCreatedAt, updated.transaction.createdAt)
+        assertTrue(updated.transaction.updatedAt > originalUpdatedAt)
 
         job.cancel()
     }

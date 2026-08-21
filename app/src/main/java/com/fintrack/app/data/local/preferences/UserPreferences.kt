@@ -1,5 +1,7 @@
 package com.fintrack.app.data.local.preferences
 
+import java.util.Locale
+
 /**
  * App theme configurations.
  */
@@ -34,5 +36,5 @@ data class UserPreferences(
     val isOnboardingCompleted: Boolean = false
 ) {
     val reminderTimeFormatted: String
-        get() = String.format("%02d:%02d", reminderHour, reminderMinute)
+        get() = String.format(Locale.ROOT, "%02d:%02d", reminderHour, reminderMinute)
 }

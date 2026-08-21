@@ -7,11 +7,11 @@
 ![Room](https://img.shields.io/badge/Database-Room%202.6.1-orange?logo=sqlite&logoColor=white)
 ![DataStore](https://img.shields.io/badge/Storage-DataStore%201.1.3-blue)
 ![WorkManager](https://img.shields.io/badge/Background-WorkManager%202.10.0-green)
-![Unit Tests](https://img.shields.io/badge/Unit%20Tests-53%20Passed-brightgreen)
+![Unit Tests](https://img.shields.io/badge/Unit%20Tests-55%20Passed-brightgreen)
 ![Min SDK](https://img.shields.io/badge/minSdk-24-3DDC84?logo=android&logoColor=white)
 ![Target SDK](https://img.shields.io/badge/targetSdk-35-3DDC84?logo=android&logoColor=white)
 
-**FinTrack** là ứng dụng Android Native quản lý tài chính cá nhân được thiết kế và xây dựng theo chuẩn **Local-First Vault**. Ứng dụng tập trung vào sự riêng tư tuyệt đối, tốc độ phản hồi tức thì và trải nghiệm người dùng hiện đại với 100% Jetpack Compose & Material 3. Toàn bộ dữ liệu được lưu trữ an toàn cục bộ trên thiết bị của người dùng mà không phụ thuộc vào máy chủ bên thứ ba.
+**FinTrack** là ứng dụng Android Native quản lý tài chính cá nhân theo hướng **local-first**, tập trung vào tốc độ phản hồi và trải nghiệm hiện đại với Jetpack Compose và Material 3. Dữ liệu tài chính và cài đặt được lưu cục bộ bằng Room Database và Jetpack DataStore, không phụ thuộc vào máy chủ ứng dụng. Android cloud backup và device-to-device transfer được vô hiệu hóa thông qua manifest cùng các quy tắc backup/data extraction.
 
 ---
 
@@ -29,14 +29,14 @@
 
 ## 🌟 Điểm nổi bật
 
-- **Local-First Vault Architecture**: Dữ liệu tài chính được lưu trữ và quản lý an toàn 100% trên máy với Room Database và Jetpack DataStore, hoạt động offline hoàn toàn.
+- **Local-First Storage**: Dữ liệu tài chính và cài đặt được lưu cục bộ bằng Room Database và Jetpack DataStore, cho phép các chức năng chính hoạt động offline. Android cloud backup và device-to-device transfer được vô hiệu hóa bằng cấu hình manifest cùng các quy tắc backup/data extraction.
 - **100% Jetpack Compose & Material 3**: Giao diện thuần khai báo (Declarative UI), hỗ trợ Edge-to-Edge chuẩn Android 15, Dark Theme tự nhiên và chuyển động vi mô (micro-interactions) mượt mà.
 - **Nhập liệu số tiền thông minh**: Bộ lọc trực quan phân tách hàng nghìn bằng dấu chấm (`5.000.000 ₫`), tự động ẩn placeholder khi nhập và căn chỉnh vị trí con trỏ chính xác.
 - **Thẻ Insight Xu hướng Tài chính Động**: Tự động phân tích tỷ lệ giữ lại thu nhập theo thời gian thực dựa trên tổng thu chi thực tế trong tháng.
 - **Bộ điều hướng & Lọc kỳ thời gian linh hoạt**: Hỗ trợ chuyển đổi nhanh giữa các tháng `< Tháng 8, 2026 >`, lọc Hôm nay, Tuần, Tháng, Năm, Toàn thời gian và khoảng ngày tùy chọn.
 - **Biểu đồ Thống kê Canvas Chuyên nghiệp**: Donut Chart phân tích cơ cấu chi tiêu theo danh mục và Grouped Bar Chart so sánh đối ứng Thu vs Chi theo từng mốc thời gian.
 - **Tác vụ ngầm & Thông báo định kỳ (WorkManager)**: Lập lịch nhắc nhở ghi chép hàng ngày bền bỉ, sống sót qua khởi động lại máy mà không gây tốn pin.
-- **Độ tin cậy cao**: Bộ **53 bài kiểm thử đơn vị (Unit Tests)** độc lập bao phủ toàn diện Database DAOs, Repositories, ViewModels, Visual Transformations và Formatters.
+- **Độ tin cậy cao**: Bộ **55 bài kiểm thử đơn vị (Unit Tests)** độc lập kiểm tra Repositories, ViewModels, Converters, Formatters và Visual Transformations.
 
 ---
 
@@ -131,7 +131,7 @@ Toàn bộ hình ảnh dưới đây được chụp trực tiếp từ thiết 
 
 ## 🏗 Kiến trúc & Luồng dữ liệu
 
-FinTrack tuân thủ chặt chẽ kiến trúc **Clean Architecture** và mô hình **MVVM** theo khuyến nghị của Google Android:
+FinTrack sử dụng mô hình **MVVM kết hợp Repository pattern** và Unidirectional Data Flow. Cấu trúc được giữ gọn trong một app module để phù hợp phạm vi portfolio Android Fresher:
 
 ```mermaid
 flowchart TB
@@ -140,7 +140,7 @@ flowchart TB
         VM["ViewModels (StateFlow & Channel Events)\nHomeVM, TransactionsVM, StatisticsVM\nSettingsVM, AddEditVM, DetailVM, OnboardingVM"]
     end
 
-    subgraph Domain_Data_Layer ["Data Layer (Local-First Vault)"]
+    subgraph Data_Layer ["Data Layer (Local-First Storage)"]
         Repos["TransactionRepository\nCategoryRepository\nPreferencesRepository"]
         RoomDB["Room Database (SQLite)\nTransactionDao + CategoryDao\n(Flow-based Reactive Queries)"]
         DataStore["Jetpack DataStore Preferences\n(Theme, Currency, Reminder Time, Onboarding)"]
@@ -163,7 +163,7 @@ flowchart TB
 ### Nguyên tắc thiết kế cốt lõi:
 1. **Unidirectional Data Flow (UDF)**: Trạng thái (State) đi xuống giao diện, sự kiện (Events) đi lên ViewModel.
 2. **Single Source of Truth (SSOT)**: Room Database và DataStore là nguồn dữ liệu duy nhất đáng tin cậy. UI chỉ quan sát luồng `Flow` phát ra từ Database.
-3. **Immutability & Thread Safety**: Mọi trạng thái UI đều là immutable `data class`, các thao tác ghi dữ liệu chạy trên `Dispatchers.IO` thông qua Coroutines.
+3. **State bất biến & xử lý bất đồng bộ**: UI state được biểu diễn bằng các `data class` và phát qua `StateFlow`; các thao tác bất đồng bộ được điều phối bằng Kotlin Coroutines và `viewModelScope`, trong khi Room/DataStore quản lý việc truy cập dữ liệu.
 
 ---
 
@@ -202,7 +202,7 @@ FinTrack/
 │   │   │   ├── util/                         # CategoryIconHelper, CurrencyFormatter, DateTimeExtensions, ThousandsSeparatorVisualTransformation
 │   │   │   └── viewmodel/                    # AppViewModelProvider Factory
 │   │   └── worker/                           # DailyReminderWorker & ReminderScheduler
-│   └── src/test/java/com/fintrack/app/       # Bộ 53 bài Unit Tests kiểm thử toàn diện
+│   └── src/test/java/com/fintrack/app/       # Bộ 55 bài Unit Tests
 ├── screenshots/                              # Bộ ảnh chụp màn hình thực tế từ thiết bị
 └── README.md                                 # Tài liệu kỹ thuật dự án
 ```
@@ -223,21 +223,21 @@ FinTrack/
 | **Lưu trữ Cài đặt** | Jetpack DataStore Preferences | `1.1.3` | Lưu cấu hình người dùng an toàn |
 | **Tác vụ Nền** | AndroidX WorkManager | `2.10.0` | Lập lịch thông báo nhắc nhở định kỳ |
 | **Bất đồng bộ** | Kotlin Coroutines & StateFlow | `1.10.1` | Xử lý đa luồng và reactive streams |
-| **Kiểm thử Đơn vị** | JUnit 4 & Coroutines Test | `4.13.2` | Bộ 53 bài test kiểm thử logic |
+| **Kiểm thử Đơn vị** | JUnit 4 & Coroutines Test | `4.13.2` | Bộ 55 bài test kiểm thử logic |
 
 ---
 
 ## 🧪 Kiểm thử Đơn vị (Unit Testing)
 
-Dự án trang bị bộ **53 bài kiểm thử đơn vị độc lập** bao phủ toàn bộ các tầng kiến trúc cốt lõi:
+Dự án trang bị bộ **55 bài kiểm thử đơn vị độc lập** kiểm tra repositories, ViewModels, converters, formatters và visual transformations:
 
 | Nhóm Kiểm thử | Test Class | Số bài test | Trạng thái |
 |---|---|:---:|:---:|
 | **Converters** | `AppTypeConvertersTest` | 2 | ✅ 100% Passed |
 | **Data Repositories** | `CategoryRepositoryTest`<br>`TransactionRepositoryTest` | 4<br>3 | ✅ 100% Passed<br>✅ 100% Passed |
 | **Tiện ích & Formatters** | `CurrencyFormatterTest`<br>`DateTimeExtensionsTest`<br>`ThousandsSeparatorVisualTransformationTest` | 7<br>3<br>4 | ✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed |
-| **ViewModels & UI State** | `AddEditTransactionViewModelTest`<br>`HomeViewModelTest`<br>`OnboardingViewModelTest`<br>`SettingsViewModelTest`<br>`StatisticsViewModelTest`<br>`TransactionDetailViewModelTest`<br>`TransactionsViewModelTest` | 6<br>3<br>1<br>6<br>3<br>4<br>7 | ✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed |
-| **Tổng cộng** | **13 Test Classes** | **53 Tests** | **✅ 100% Passed (0 Failures)** |
+| **ViewModels & UI State** | `AddEditTransactionViewModelTest`<br>`HomeViewModelTest`<br>`OnboardingViewModelTest`<br>`SettingsViewModelTest`<br>`StatisticsViewModelTest`<br>`TransactionDetailViewModelTest`<br>`TransactionsViewModelTest` | 6<br>3<br>1<br>8<br>3<br>4<br>7 | ✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed<br>✅ 100% Passed |
+| **Tổng cộng** | **13 Test Classes** | **55 Tests** | **✅ 100% Passed (0 Failures)** |
 
 Lệnh thực thi toàn bộ test suite:
 ```powershell

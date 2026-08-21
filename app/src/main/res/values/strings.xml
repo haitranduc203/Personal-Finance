@@ -124,7 +124,7 @@
     <string name="settings_subtitle">Tùy chỉnh hệ thống</string>
     <string name="settings_tag_security">Bảo mật</string>
     <string name="settings_vault_title">Local-First Vault</string>
-    <string name="settings_vault_desc">Dữ liệu của bạn được lưu trữ an toàn 100% cục bộ trên thiết bị.</string>
+    <string name="settings_vault_desc" formatted="false">Dữ liệu của bạn được lưu trữ an toàn 100% cục bộ trên thiết bị.</string>
     <string name="settings_section_interface">GIAO DIỆN &amp; TIỀN TỆ</string>
     <string name="settings_dark_theme">Giao diện tối (Dark Theme)</string>
     <string name="settings_dark_theme_desc">Chuyển đổi tông màu tối để bảo vệ mắt</string>
@@ -159,12 +159,12 @@
     <string name="onboarding_slide2_title">Phân tích tài chính trực quan</string>
     <string name="onboarding_slide2_desc">Báo cáo chi tiết theo tuần, tháng, năm. Cơ cấu chi tiêu bằng biểu đồ tròn và cột sinh động giúp bạn tối ưu ngân sách cá nhân.</string>
     <string name="onboarding_slide3_title">Bảo mật &amp; Nhắc nhở hàng ngày</string>
-    <string name="onboarding_slide3_desc">Dữ liệu lưu trữ an toàn 100% offline trên thiết bị của bạn. Thông báo nhắc nhở ghi chép chi tiêu mỗi tối để xây dựng thói quen tài chính tốt.</string>
+    <string name="onboarding_slide3_desc" formatted="false">Dữ liệu lưu trữ an toàn 100% offline trên thiết bị của bạn. Thông báo nhắc nhở ghi chép chi tiêu mỗi tối để xây dựng thói quen tài chính tốt.</string>
 
     <!-- Notification Helper -->
     <string name="notif_channel_name">Nhắc nhở ghi chép chi tiêu</string>
     <string name="notif_channel_desc">Thông báo nhắc người dùng ghi chép chi tiêu và thu nhập hàng ngày</string>
     <string name="notif_title">Đừng quên ghi chép chi tiêu hôm nay!</string>
-    <string name="notif_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính chính xác nhé.</string>
+    <string name="notif_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính hiệu quả nhé.</string>
     <string name="notif_big_text">Dành 1 phút ghi lại các khoản thu chi để kiểm soát tài chính và theo dõi ngân sách chính xác nhé.</string>
 </resources>

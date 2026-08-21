@@ -50,6 +50,8 @@ class AddEditTransactionViewModel(
     private val categoryRepository: CategoryRepository
 ) : ViewModel() {
 
+    private var editingTransaction: TransactionEntity? = null
+
     private val _uiState = MutableStateFlow(AddEditTransactionUiState())
     val uiState: StateFlow<AddEditTransactionUiState> = _uiState.asStateFlow()
 
@@ -78,6 +80,7 @@ class AddEditTransactionViewModel(
 
     fun initForTransaction(id: Long?) {
         if (id == null || id <= 0) {
+            editingTransaction = null
             _uiState.update { it.copy(isEditing = false, transactionId = null) }
             return
         }
@@ -85,6 +88,7 @@ class AddEditTransactionViewModel(
         viewModelScope.launch {
             val txWithCat = transactionRepository.getTransactionById(id)
             if (txWithCat != null) {
+                editingTransaction = txWithCat.transaction
                 val dt = txWithCat.transaction.transactionDate.toLocalDateTime()
                 _selectedType.value = txWithCat.transaction.type
                 _uiState.update {
@@ -98,6 +102,7 @@ class AddEditTransactionViewModel(
                     )
                 }
             } else {
+                editingTransaction = null
                 _uiState.update { it.copy(isLoading = false, generalError = "Không tìm thấy giao dịch") }
             }
         }
@@ -157,14 +162,23 @@ class AddEditTransactionViewModel(
         _uiState.update { it.copy(isSubmitting = true, amountError = null, categoryError = null) }
         viewModelScope.launch {
             try {
+                val now = System.currentTimeMillis()
                 val epochMillis = state.dateTime.toEpochMillis()
-                val entity = TransactionEntity(
-                    id = state.transactionId ?: 0L,
+                val entity = editingTransaction?.copy(
                     amount = amount!!,
                     type = state.type,
                     categoryId = state.selectedCategory!!.id,
                     transactionDate = epochMillis,
-                    note = state.note.trim().ifEmpty { null }
+                    note = state.note.trim().ifEmpty { null },
+                    updatedAt = now
+                ) ?: TransactionEntity(
+                    amount = amount!!,
+                    type = state.type,
+                    categoryId = state.selectedCategory!!.id,
+                    transactionDate = epochMillis,
+                    note = state.note.trim().ifEmpty { null },
+                    createdAt = now,
+                    updatedAt = now
                 )
                 if (state.isEditing && state.transactionId != null) {
                     transactionRepository.updateTransaction(entity)

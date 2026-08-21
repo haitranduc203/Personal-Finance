@@ -1,17 +1,27 @@
 package com.fintrack.app.data.notification
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 import com.fintrack.app.MainActivity
 
-object NotificationHelper {
+/**
+ * Contract for dispatching notifications, enabling clean test injection.
+ */
+fun interface NotificationSender {
+    fun showDailyReminderNotification(context: Context): Boolean
+}
+
+object NotificationHelper : NotificationSender {
 
     private const val TAG = "FinTrackNotification"
     const val CHANNEL_ID = "fintrack_daily_reminder"
@@ -40,9 +50,26 @@ object NotificationHelper {
     /**
      * Builds and delivers the daily expense reminder notification.
      */
-    fun showDailyReminderNotification(context: Context) {
+    override fun showDailyReminderNotification(context: Context): Boolean {
         // Ensure channel is created
         createNotificationChannel(context)
+
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w(TAG, "Notification permission is not granted")
+            return false
+        }
+
+        val manager = NotificationManagerCompat.from(context)
+        if (!manager.areNotificationsEnabled()) {
+            Log.w(TAG, "Notifications are disabled for this application")
+            return false
+        }
 
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
@@ -69,14 +96,18 @@ object NotificationHelper {
             .setAutoCancel(true)
             .build()
 
-        try {
-            val manager = NotificationManagerCompat.from(context)
+        return try {
             val areEnabled = manager.areNotificationsEnabled()
             Log.d(TAG, "Sending notification. Notifications enabled: $areEnabled")
             manager.notify(NOTIFICATION_ID, notification)
             Log.d(TAG, "Notification sent with ID: $NOTIFICATION_ID")
+            true
+        } catch (e: SecurityException) {
+            Log.e(TAG, "SecurityException while posting notification", e)
+            false
         } catch (e: Exception) {
             Log.e(TAG, "Failed to post notification", e)
+            false
         }
     }
 }

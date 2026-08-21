@@ -9,6 +9,7 @@ import com.fintrack.app.data.local.preferences.AppThemeConfig
 import com.fintrack.app.data.local.preferences.CurrencyConfig
 import com.fintrack.app.data.local.preferences.UserPreferences
 import com.fintrack.app.data.notification.NotificationHelper
+import com.fintrack.app.data.notification.NotificationSender
 import com.fintrack.app.data.repository.CategoryRepository
 import com.fintrack.app.data.repository.PreferencesRepository
 import com.fintrack.app.data.repository.TransactionRepository
@@ -55,7 +56,8 @@ class SettingsViewModel(
     application: Application,
     private val preferencesRepository: PreferencesRepository,
     private val transactionRepository: TransactionRepository,
-    private val categoryRepository: CategoryRepository
+    private val categoryRepository: CategoryRepository,
+    private val notificationSender: NotificationSender = NotificationHelper
 ) : AndroidViewModel(application) {
 
     private val _dialogState = MutableStateFlow(DialogState())
@@ -176,10 +178,21 @@ class SettingsViewModel(
 
     fun triggerTestNotification() {
         try {
-            NotificationHelper.showDailyReminderNotification(getApplication())
-            _dialogState.update { it.copy(message = "Đã gửi thông báo nhắc nhở thử nghiệm 📝") }
+            val wasDelivered = notificationSender.showDailyReminderNotification(getApplication())
+            _dialogState.update {
+                it.copy(
+                    message = if (wasDelivered) {
+                        "Đã gửi thông báo nhắc nhở thử nghiệm 📝"
+                    } else {
+                        "Không thể gửi thông báo. Vui lòng cấp quyền thông báo trong cài đặt."
+                    }
+                )
+            }
         } catch (e: Exception) {
             Log.e("SettingsVM", "Failed to trigger test notification", e)
+            _dialogState.update {
+                it.copy(message = "Không thể gửi thông báo. Vui lòng cấp quyền thông báo trong cài đặt.")
+            }
         }
     }
 
